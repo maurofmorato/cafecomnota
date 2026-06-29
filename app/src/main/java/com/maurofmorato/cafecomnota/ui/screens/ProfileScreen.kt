@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -20,6 +22,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
+import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
@@ -129,6 +133,39 @@ fun ProfileScreen(
                         tint = CoffeeBrown
                     )
                 }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                CafeAnalytics.logEvent(
+                    eventName = AnalyticsEvents.CRASHLYTICS_NON_FATAL_TEST,
+                    params = mapOf(
+                        "source" to "profile",
+                        "type" to "non_fatal"
+                    )
+                )
+
+                CafeAnalytics.recordNonFatal(
+                    throwable = IllegalStateException("Teste nao fatal do Crashlytics - Cafe com nota"),
+                    params = mapOf(
+                        "screen" to "profile",
+                        "action" to "test_non_fatal"
+                    )
+                )
+            }
+        ) {
+            Icon(
+                imageVector = Icons.Default.BugReport,
+                contentDescription = null
+            )
+
+            Text(
+                text = "Registrar teste não fatal",
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
     }

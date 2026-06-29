@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "988386941559",
+    "project_id": "cafe-com-nota",
+    "storage_bucket": "cafe-com-nota.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:988386941559:android:a5d281711924042e230472",
+        "android_client_info": {
+          "package_name": "com.maurofmorato.cafecomnota"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEVRwXJeG_fD0OODcz6lA1KZf_XNAAzxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
