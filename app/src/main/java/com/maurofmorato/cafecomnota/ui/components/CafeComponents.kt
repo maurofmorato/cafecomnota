@@ -31,13 +31,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -72,12 +71,17 @@ fun CafeBottomBar(
     currentDestination: AppDestination,
     onNavigate: (AppDestination) -> Unit
 ) {
-    NavigationBar(
-        modifier = Modifier.navigationBarsPadding(),
-        containerColor = androidx.compose.ui.graphics.Color.White,
-        tonalElevation = 4.dp
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .navigationBarsPadding()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         BottomItem(
+            modifier = Modifier.weight(1f),
             destination = AppDestination.Home,
             selected = currentDestination == AppDestination.Home,
             icon = Icons.Default.Home,
@@ -85,6 +89,7 @@ fun CafeBottomBar(
         )
 
         BottomItem(
+            modifier = Modifier.weight(1f),
             destination = AppDestination.Search,
             selected = currentDestination == AppDestination.Search,
             icon = Icons.Default.Search,
@@ -92,6 +97,7 @@ fun CafeBottomBar(
         )
 
         BottomItem(
+            modifier = Modifier.weight(1f),
             destination = AppDestination.Ranking,
             selected = currentDestination == AppDestination.Ranking,
             icon = Icons.Default.BarChart,
@@ -99,6 +105,7 @@ fun CafeBottomBar(
         )
 
         BottomItem(
+            modifier = Modifier.weight(1f),
             destination = AppDestination.Profile,
             selected = currentDestination == AppDestination.Profile,
             icon = Icons.Default.Person,
@@ -109,26 +116,39 @@ fun CafeBottomBar(
 
 @Composable
 private fun BottomItem(
+    modifier: Modifier = Modifier,
     destination: AppDestination,
     selected: Boolean,
     icon: ImageVector,
     onNavigate: (AppDestination) -> Unit
 ) {
-    NavigationBarItem(
-        selected = selected,
-        onClick = {
-            onNavigate(destination)
-        },
-        icon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = destination.label
-            )
-        },
-        label = {
-            Text(destination.label)
-        }
-    )
+    val itemColor = if (selected) CoffeeBrown else CoffeeMuted
+    val backgroundColor = if (selected) CoffeeCard else Color.Transparent
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(backgroundColor)
+            .clickable {
+                onNavigate(destination)
+            }
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = destination.label,
+            tint = itemColor,
+            modifier = Modifier.size(25.dp)
+        )
+
+        Text(
+            text = destination.label,
+            color = itemColor,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+        )
+    }
 }
 
 @Composable
@@ -319,7 +339,7 @@ fun CoffeeRankingItem(
             ),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = androidx.compose.ui.graphics.Color.White
+            containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
