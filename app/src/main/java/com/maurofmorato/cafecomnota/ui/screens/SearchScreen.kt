@@ -38,7 +38,8 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 @Composable
 fun SearchScreen(
     innerPadding: PaddingValues,
-    onNavigate: (AppDestination) -> Unit
+    onNavigate: (AppDestination) -> Unit,
+    onOpenCoffee: (String) -> Unit
 ) {
     val searchText = remember { mutableStateOf("") }
 
@@ -47,7 +48,8 @@ fun SearchScreen(
         term.isBlank() ||
             coffee.name.contains(term, ignoreCase = true) ||
             coffee.brand.contains(term, ignoreCase = true) ||
-            coffee.type.contains(term, ignoreCase = true)
+            coffee.type.contains(term, ignoreCase = true) ||
+            coffee.roast.contains(term, ignoreCase = true)
     }
 
     Column(
@@ -128,7 +130,7 @@ fun SearchScreen(
                     position = index + 1,
                     coffee = coffee,
                     onClick = {
-                        onNavigate(AppDestination.ReviewCoffee)
+                        onOpenCoffee(coffee.id)
                     }
                 )
 

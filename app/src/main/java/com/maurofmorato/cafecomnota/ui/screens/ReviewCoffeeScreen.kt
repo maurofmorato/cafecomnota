@@ -48,6 +48,7 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 @Composable
 fun ReviewCoffeeScreen(
     innerPadding: PaddingValues,
+    coffeeName: String,
     onBack: () -> Unit
 ) {
     val rating = remember { mutableIntStateOf(4) }
@@ -98,7 +99,7 @@ fun ReviewCoffeeScreen(
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Dar nota a um café")
+        SectionTitle(title = "Dar nota")
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -116,13 +117,13 @@ fun ReviewCoffeeScreen(
                 modifier = Modifier.padding(18.dp)
             ) {
                 Text(
-                    text = "Avaliação rápida",
+                    text = coffeeName,
                     color = CoffeeBrown,
                     style = androidx.compose.material3.MaterialTheme.typography.titleLarge
                 )
 
                 Text(
-                    text = "A ligação com o Supabase entra na próxima etapa.",
+                    text = "Avaliação rápida. A ligação com o Supabase entra na próxima etapa.",
                     color = CoffeeMuted
                 )
 

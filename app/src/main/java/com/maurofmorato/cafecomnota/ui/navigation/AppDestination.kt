@@ -24,6 +24,11 @@ enum class AppDestination(
         showInBottomBar = true
     ),
 
+    CoffeeDetail(
+        label = "Detalhe",
+        showInBottomBar = false
+    ),
+
     ReviewCoffee(
         label = "Avaliar",
         showInBottomBar = false

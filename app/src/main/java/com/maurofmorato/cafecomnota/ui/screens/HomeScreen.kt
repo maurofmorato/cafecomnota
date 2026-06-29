@@ -1,6 +1,8 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -23,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.maurofmorato.cafecomnota.ui.components.ActionIcon
@@ -33,7 +35,7 @@ import com.maurofmorato.cafecomnota.ui.components.MainActionCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.ShortcutChip
 import com.maurofmorato.cafecomnota.ui.components.ShortcutType
-import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
+import com.maurofmorato.cafecomnota.ui.model.topRatedCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeGold
@@ -42,7 +44,8 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeLine
 @Composable
 fun HomeScreen(
     innerPadding: PaddingValues,
-    onNavigate: (AppDestination) -> Unit
+    onNavigate: (AppDestination) -> Unit,
+    onOpenCoffee: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -103,12 +106,12 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        sampleCoffees().take(3).forEachIndexed { index, coffee ->
+        topRatedCoffees().take(3).forEachIndexed { index, coffee ->
             CoffeeRankingItem(
                 position = index + 1,
                 coffee = coffee,
                 onClick = {
-                    onNavigate(AppDestination.Search)
+                    onOpenCoffee(coffee.id)
                 }
             )
 
@@ -154,33 +157,44 @@ private fun HomeSearchBar(
 ) {
     val searchText = remember { mutableStateOf("") }
 
-    OutlinedTextField(
-        value = searchText.value,
-        onValueChange = {
-            searchText.value = it
-        },
-        modifier = Modifier.fillMaxWidth(),
-        placeholder = {
-            Text(
-                text = "Pesquisar café, marca ou torrefação",
-                color = Color.Gray
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onSearchClick()
+            }
+    ) {
+        OutlinedTextField(
+            value = searchText.value,
+            onValueChange = {
+                searchText.value = it
+            },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = "Pesquisar café, marca ou torrefação",
+                    color = Color.Gray
+                )
+            },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Pesquisar",
+                    tint = CoffeeBrown,
+                    modifier = Modifier.clickable {
+                        onSearchClick()
+                    }
+                )
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(22.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedIndicatorColor = CoffeeGold,
+                unfocusedIndicatorColor = CoffeeLine,
+                cursorColor = CoffeeBrown
             )
-        },
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Pesquisar",
-                tint = CoffeeBrown
-            )
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(22.dp),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedIndicatorColor = CoffeeGold,
-            unfocusedIndicatorColor = CoffeeLine,
-            cursorColor = CoffeeBrown
         )
-    )
+    }
 }
