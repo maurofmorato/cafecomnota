@@ -1,19 +1,14 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
@@ -28,6 +23,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +32,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
+import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
+import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.formatPriceKg
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -48,6 +47,7 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 @Composable
 fun ReviewCoffeeScreen(
     innerPadding: PaddingValues,
+    coffeeId: String,
     coffeeName: String,
     onBack: () -> Unit
 ) {
@@ -76,14 +76,23 @@ fun ReviewCoffeeScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 8.dp, bottom = 18.dp)
+    LaunchedEffect(priceKg.value) {
+        val calculatedPriceKg = priceKg.value
+
+        if (calculatedPriceKg != null) {
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.CALCULATE_PRICE_KG,
+                params = mapOf(
+                    "coffee_id" to coffeeId,
+                    "weight_g" to weight.value,
+                    "price_kg_range" to priceKgRange(calculatedPriceKg)
+                )
+            )
+        }
+    }
+
+    CafeResponsiveContent(
+        innerPadding = innerPadding
     ) {
         IconButton(
             onClick = onBack
@@ -113,7 +122,7 @@ fun ReviewCoffeeScreen(
                 defaultElevation = 3.dp
             )
         ) {
-            Column(
+            androidx.compose.foundation.layout.Column(
                 modifier = Modifier.padding(18.dp)
             ) {
                 Text(
@@ -262,7 +271,17 @@ fun ReviewCoffeeScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Button(
-                    onClick = { },
+                    onClick = {
+                        CafeAnalytics.logEvent(
+                            eventName = AnalyticsEvents.SAVE_REVIEW_TAP,
+                            params = mapOf(
+                                "coffee_id" to coffeeId,
+                                "rating" to rating.intValue,
+                                "has_price_kg" to (priceKg.value != null),
+                                "would_buy_again" to wouldBuyAgain.value
+                            )
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
@@ -277,5 +296,14 @@ fun ReviewCoffeeScreen(
                 }
             }
         }
+    }
+}
+
+private fun priceKgRange(value: Double): String {
+    return when {
+        value < 40.0 -> "below_40"
+        value < 70.0 -> "40_70"
+        value < 100.0 -> "70_100"
+        else -> "above_100"
     }
 }

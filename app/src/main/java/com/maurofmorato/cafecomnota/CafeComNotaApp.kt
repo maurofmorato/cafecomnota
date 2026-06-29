@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
+import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeBottomBar
 import com.maurofmorato.cafecomnota.ui.model.findCoffeeById
 import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
@@ -39,9 +42,38 @@ fun CafeComNotaApp() {
         val selectedCoffee = findCoffeeById(selectedCoffeeId)
             ?: sampleCoffees().first()
 
+        fun navigateTo(
+            newDestination: AppDestination,
+            source: String = "app"
+        ) {
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.NAVIGATE,
+                params = mapOf(
+                    "from" to destination.analyticsName,
+                    "to" to newDestination.analyticsName,
+                    "source" to source
+                )
+            )
+
+            currentDestination = newDestination.name
+        }
+
         fun openCoffeeDetail(coffeeId: String) {
             selectedCoffeeId = coffeeId
+
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.VIEW_COFFEE_DETAIL,
+                params = mapOf(
+                    "coffee_id" to coffeeId,
+                    "source" to destination.analyticsName
+                )
+            )
+
             currentDestination = AppDestination.CoffeeDetail.name
+        }
+
+        LaunchedEffect(destination) {
+            CafeAnalytics.logScreen(destination.analyticsName)
         }
 
         Surface(
@@ -55,7 +87,10 @@ fun CafeComNotaApp() {
                         CafeBottomBar(
                             currentDestination = destination,
                             onNavigate = {
-                                currentDestination = it.name
+                                navigateTo(
+                                    newDestination = it,
+                                    source = "bottom_bar"
+                                )
                             }
                         )
                     }
@@ -65,7 +100,10 @@ fun CafeComNotaApp() {
                     AppDestination.Home -> HomeScreen(
                         innerPadding = innerPadding,
                         onNavigate = {
-                            currentDestination = it.name
+                            navigateTo(
+                                newDestination = it,
+                                source = "home"
+                            )
                         },
                         onOpenCoffee = ::openCoffeeDetail
                     )
@@ -73,7 +111,10 @@ fun CafeComNotaApp() {
                     AppDestination.Search -> SearchScreen(
                         innerPadding = innerPadding,
                         onNavigate = {
-                            currentDestination = it.name
+                            navigateTo(
+                                newDestination = it,
+                                source = "search"
+                            )
                         },
                         onOpenCoffee = ::openCoffeeDetail
                     )
@@ -81,7 +122,10 @@ fun CafeComNotaApp() {
                     AppDestination.Ranking -> RankingScreen(
                         innerPadding = innerPadding,
                         onNavigate = {
-                            currentDestination = it.name
+                            navigateTo(
+                                newDestination = it,
+                                source = "ranking"
+                            )
                         },
                         onOpenCoffee = ::openCoffeeDetail
                     )
@@ -89,7 +133,10 @@ fun CafeComNotaApp() {
                     AppDestination.Profile -> ProfileScreen(
                         innerPadding = innerPadding,
                         onNavigate = {
-                            currentDestination = it.name
+                            navigateTo(
+                                newDestination = it,
+                                source = "profile"
+                            )
                         }
                     )
 
@@ -97,25 +144,46 @@ fun CafeComNotaApp() {
                         innerPadding = innerPadding,
                         coffee = selectedCoffee,
                         onBack = {
-                            currentDestination = AppDestination.Home.name
+                            navigateTo(
+                                newDestination = AppDestination.Home,
+                                source = "coffee_detail_back"
+                            )
                         },
                         onReview = {
-                            currentDestination = AppDestination.ReviewCoffee.name
+                            CafeAnalytics.logEvent(
+                                eventName = AnalyticsEvents.START_REVIEW,
+                                params = mapOf(
+                                    "coffee_id" to selectedCoffee.id,
+                                    "coffee_name" to selectedCoffee.name
+                                )
+                            )
+
+                            navigateTo(
+                                newDestination = AppDestination.ReviewCoffee,
+                                source = "coffee_detail"
+                            )
                         }
                     )
 
                     AppDestination.ReviewCoffee -> ReviewCoffeeScreen(
                         innerPadding = innerPadding,
+                        coffeeId = selectedCoffee.id,
                         coffeeName = selectedCoffee.name,
                         onBack = {
-                            currentDestination = AppDestination.CoffeeDetail.name
+                            navigateTo(
+                                newDestination = AppDestination.CoffeeDetail,
+                                source = "review_back"
+                            )
                         }
                     )
 
                     AppDestination.AddCoffee -> AddCoffeeScreen(
                         innerPadding = innerPadding,
                         onBack = {
-                            currentDestination = AppDestination.Home.name
+                            navigateTo(
+                                newDestination = AppDestination.Home,
+                                source = "add_coffee_back"
+                            )
                         }
                     )
                 }

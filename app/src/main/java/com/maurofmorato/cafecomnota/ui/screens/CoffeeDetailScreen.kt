@@ -3,21 +3,16 @@ package com.maurofmorato.cafecomnota.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -41,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
+import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.formatPriceKg
 import com.maurofmorato.cafecomnota.ui.components.formatRating
@@ -60,14 +56,8 @@ fun CoffeeDetailScreen(
     onBack: () -> Unit,
     onReview: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 8.dp, bottom = 18.dp)
+    CafeResponsiveContent(
+        innerPadding = innerPadding
     ) {
         IconButton(
             onClick = onBack
@@ -176,7 +166,7 @@ private fun CoffeeMainCard(
             defaultElevation = 4.dp
         )
     ) {
-        Column(
+        androidx.compose.foundation.layout.Column(
             modifier = Modifier.padding(20.dp)
         ) {
             Row(
@@ -198,7 +188,7 @@ private fun CoffeeMainCard(
                     )
                 }
 
-                Column(
+                androidx.compose.foundation.layout.Column(
                     modifier = Modifier.padding(start = 16.dp)
                 ) {
                     Text(
@@ -224,7 +214,7 @@ private fun CoffeeMainCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Column {
+                androidx.compose.foundation.layout.Column {
                     Text(
                         text = "Nota média",
                         color = CoffeeMuted,
@@ -250,7 +240,7 @@ private fun CoffeeMainCard(
                     }
                 }
 
-                Column(
+                androidx.compose.foundation.layout.Column(
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
@@ -293,7 +283,7 @@ private fun SummaryCard(
             defaultElevation = 2.dp
         )
     ) {
-        Column(
+        androidx.compose.foundation.layout.Column(
             modifier = Modifier.padding(14.dp)
         ) {
             Icon(
@@ -355,7 +345,7 @@ private fun RatingMetric(
     title: String,
     value: Double
 ) {
-    Column(
+    androidx.compose.foundation.layout.Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 12.dp)

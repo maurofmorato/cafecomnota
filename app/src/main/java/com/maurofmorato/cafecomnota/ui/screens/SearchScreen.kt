@@ -1,16 +1,11 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
@@ -20,12 +15,16 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
+import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
+import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
@@ -52,14 +51,32 @@ fun SearchScreen(
             coffee.roast.contains(term, ignoreCase = true)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 12.dp, bottom = 18.dp)
+    LaunchedEffect(searchText.value, filteredCoffees.size) {
+        val term = searchText.value.trim()
+
+        if (term.length >= 2) {
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.SEARCH_COFFEE,
+                params = mapOf(
+                    "search_length" to term.length,
+                    "result_count" to filteredCoffees.size,
+                    "has_result" to filteredCoffees.isNotEmpty()
+                )
+            )
+
+            if (filteredCoffees.isEmpty()) {
+                CafeAnalytics.logEvent(
+                    eventName = AnalyticsEvents.SEARCH_NOT_FOUND,
+                    params = mapOf(
+                        "search_length" to term.length
+                    )
+                )
+            }
+        }
+    }
+
+    CafeResponsiveContent(
+        innerPadding = innerPadding
     ) {
         CafeHeader(compact = true)
 
@@ -111,6 +128,13 @@ fun SearchScreen(
 
             Button(
                 onClick = {
+                    CafeAnalytics.logEvent(
+                        eventName = AnalyticsEvents.START_ADD_COFFEE,
+                        params = mapOf(
+                            "source" to "search_not_found"
+                        )
+                    )
+
                     onNavigate(AppDestination.AddCoffee)
                 }
             ) {

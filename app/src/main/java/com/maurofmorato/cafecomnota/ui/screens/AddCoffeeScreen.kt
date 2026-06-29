@@ -1,17 +1,12 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocalCafe
@@ -29,7 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
+import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
+import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeCard
@@ -49,14 +47,8 @@ fun AddCoffeeScreen(
     val defaultWeight = remember { mutableStateOf("250") }
     val barcode = remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 8.dp, bottom = 18.dp)
+    CafeResponsiveContent(
+        innerPadding = innerPadding
     ) {
         IconButton(
             onClick = onBack
@@ -86,7 +78,7 @@ fun AddCoffeeScreen(
                 defaultElevation = 3.dp
             )
         ) {
-            Column(
+            androidx.compose.foundation.layout.Column(
                 modifier = Modifier.padding(18.dp)
             ) {
                 Text(
@@ -171,7 +163,16 @@ fun AddCoffeeScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Button(
-                    onClick = { },
+                    onClick = {
+                        CafeAnalytics.logEvent(
+                            eventName = AnalyticsEvents.SAVE_NEW_COFFEE_TAP,
+                            params = mapOf(
+                                "has_name" to coffeeName.value.isNotBlank(),
+                                "has_brand" to brand.value.isNotBlank(),
+                                "has_barcode" to barcode.value.isNotBlank()
+                            )
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(

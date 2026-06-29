@@ -3,18 +3,12 @@ package com.maurofmorato.cafecomnota.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -28,8 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
+import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.ActionIcon
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
+import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.MainActionCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
@@ -47,14 +44,8 @@ fun HomeScreen(
     onNavigate: (AppDestination) -> Unit,
     onOpenCoffee: (String) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 12.dp, bottom = 18.dp),
+    CafeResponsiveContent(
+        innerPadding = innerPadding,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         CafeHeader()
@@ -85,6 +76,13 @@ fun HomeScreen(
             title = "Dar nota a um café",
             subtitle = "Avalie um café já cadastrado",
             onClick = {
+                CafeAnalytics.logEvent(
+                    eventName = AnalyticsEvents.START_REVIEW,
+                    params = mapOf(
+                        "source" to "home_action_card"
+                    )
+                )
+
                 onNavigate(AppDestination.ReviewCoffee)
             }
         )
@@ -96,6 +94,13 @@ fun HomeScreen(
             title = "Cadastrar café novo",
             subtitle = "Ajude a base do app crescer",
             onClick = {
+                CafeAnalytics.logEvent(
+                    eventName = AnalyticsEvents.START_ADD_COFFEE,
+                    params = mapOf(
+                        "source" to "home_action_card"
+                    )
+                )
+
                 onNavigate(AppDestination.AddCoffee)
             }
         )

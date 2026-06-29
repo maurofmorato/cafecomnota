@@ -1,17 +1,11 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +13,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
+import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
+import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.model.bestValueCoffees
@@ -28,11 +25,21 @@ import com.maurofmorato.cafecomnota.ui.model.topRatedCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 
 private enum class RankingFilter(
-    val label: String
+    val label: String,
+    val analyticsValue: String
 ) {
-    Best("Melhores"),
-    Value("Custo-benefício"),
-    Reviews("Mais avaliados")
+    Best(
+        label = "Melhores",
+        analyticsValue = "best"
+    ),
+    Value(
+        label = "Custo-benefício",
+        analyticsValue = "value"
+    ),
+    Reviews(
+        label = "Mais avaliados",
+        analyticsValue = "reviews"
+    )
 }
 
 @Composable
@@ -51,14 +58,8 @@ fun RankingScreen(
         RankingFilter.Reviews -> mostReviewedCoffees()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 12.dp, bottom = 18.dp)
+    CafeResponsiveContent(
+        innerPadding = innerPadding
     ) {
         CafeHeader(compact = true)
 
@@ -77,6 +78,13 @@ fun RankingScreen(
                     selected = selectedFilter.value == filter,
                     onClick = {
                         selectedFilter.value = filter
+
+                        CafeAnalytics.logEvent(
+                            eventName = AnalyticsEvents.CHANGE_RANKING_FILTER,
+                            params = mapOf(
+                                "filter" to filter.analyticsValue
+                            )
+                        )
                     },
                     label = {
                         Text(filter.label)
