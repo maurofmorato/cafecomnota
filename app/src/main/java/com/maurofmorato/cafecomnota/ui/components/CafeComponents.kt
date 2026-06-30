@@ -400,7 +400,11 @@ fun CoffeeRankingItem(
                 )
 
                 Text(
-                    text = "${formatRating(coffee.rating)} ★ • ${coffee.totalReviews} $reviewLabel",
+                    text = if (coffee.hasRating) {
+                        "${formatRating(coffee.rating)} ★ • ${coffee.totalReviews} $reviewLabel"
+                    } else {
+                        "Aguardando avaliações"
+                    },
                     color = CoffeeGold,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold
@@ -408,10 +412,11 @@ fun CoffeeRankingItem(
             }
 
             Text(
-                text = formatPriceKg(coffee.priceKg),
+                text = formatPriceKgSmart(coffee.priceKg),
                 color = CoffeeBrownDark,
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.End
             )
         }
     }
@@ -475,4 +480,17 @@ fun formatRating(value: Double): String {
 fun formatPriceKg(value: Double): String {
     val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
     return "${formatter.format(value)}/kg"
+}
+
+fun formatPriceKgSmart(value: Double): String {
+    return if (value > 0.0) {
+        formatPriceKg(value)
+    } else {
+        "Preço não informado"
+    }
+}
+
+fun formatPrice250g(value: Double): String {
+    val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    return "${formatter.format(value)}/250g"
 }

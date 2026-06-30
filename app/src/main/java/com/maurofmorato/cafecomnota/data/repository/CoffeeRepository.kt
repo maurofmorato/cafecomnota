@@ -2,7 +2,7 @@ package com.maurofmorato.cafecomnota.data.repository
 
 import com.maurofmorato.cafecomnota.data.supabase.SupabaseCoffeeApi
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
-import com.maurofmorato.cafecomnota.ui.model.localSampleCoffees
+import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
 
 data class CoffeeLoadResult(
     val coffees: List<CoffeeUiModel>,
@@ -29,14 +29,14 @@ class CoffeeRepository(
                 )
             } else {
                 CoffeeLoadResult(
-                    coffees = localSampleCoffees(),
+                    coffees = sampleCoffees(),
                     source = CoffeeDataSource.LocalFallback,
                     error = IllegalStateException("Supabase não retornou cafés")
                 )
             }
         } catch (throwable: Throwable) {
             CoffeeLoadResult(
-                coffees = localSampleCoffees(),
+                coffees = sampleCoffees(),
                 source = CoffeeDataSource.LocalFallback,
                 error = throwable
             )

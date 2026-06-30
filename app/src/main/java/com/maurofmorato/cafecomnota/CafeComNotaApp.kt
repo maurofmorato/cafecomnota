@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
@@ -18,7 +18,7 @@ import com.maurofmorato.cafecomnota.data.repository.CoffeeRepository
 import com.maurofmorato.cafecomnota.ui.components.CafeBottomBar
 import com.maurofmorato.cafecomnota.ui.i18n.AppLanguage
 import com.maurofmorato.cafecomnota.ui.i18n.stringsFor
-import com.maurofmorato.cafecomnota.ui.model.CoffeeStore
+import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.model.findCoffeeById
 import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
@@ -51,6 +51,10 @@ fun CafeComNotaApp() {
             mutableStateOf(AppLanguage.Portuguese.name)
         }
 
+        var coffeesForUi by remember {
+            mutableStateOf(sampleCoffees())
+        }
+
         var coffeeDataSource by remember {
             mutableStateOf(CoffeeDataSource.LocalFallback)
         }
@@ -60,7 +64,10 @@ fun CafeComNotaApp() {
 
         val destination = AppDestination.valueOf(currentDestination)
 
-        val selectedCoffee = findCoffeeById(selectedCoffeeId)
+        val selectedCoffee = findCoffeeById(
+            id = selectedCoffeeId,
+            coffees = coffeesForUi
+        ) ?: coffeesForUi.firstOrNull()
             ?: sampleCoffees().first()
 
         fun navigateTo(
@@ -112,7 +119,7 @@ fun CafeComNotaApp() {
         LaunchedEffect(Unit) {
             val result = coffeeRepository.loadCoffees()
 
-            CoffeeStore.replaceCoffees(result.coffees)
+            coffeesForUi = ensureSafeCoffeeList(result.coffees)
             coffeeDataSource = result.source
 
             CafeAnalytics.logEvent(
@@ -174,6 +181,8 @@ fun CafeComNotaApp() {
                     AppDestination.Home -> HomeScreen(
                         innerPadding = innerPadding,
                         strings = strings,
+                        coffees = coffeesForUi,
+                        dataSource = coffeeDataSource,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,
@@ -186,6 +195,7 @@ fun CafeComNotaApp() {
                     AppDestination.Search -> SearchScreen(
                         innerPadding = innerPadding,
                         strings = strings,
+                        coffees = coffeesForUi,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,
@@ -198,6 +208,7 @@ fun CafeComNotaApp() {
                     AppDestination.Ranking -> RankingScreen(
                         innerPadding = innerPadding,
                         strings = strings,
+                        coffees = coffeesForUi,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,
@@ -274,5 +285,13 @@ fun CafeComNotaApp() {
                 }
             }
         }
+    }
+}
+
+private fun ensureSafeCoffeeList(
+    coffees: List<CoffeeUiModel>
+): List<CoffeeUiModel> {
+    return coffees.ifEmpty {
+        sampleCoffees()
     }
 }

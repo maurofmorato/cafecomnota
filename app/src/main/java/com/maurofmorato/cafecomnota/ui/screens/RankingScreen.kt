@@ -20,9 +20,12 @@ import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
+import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.model.bestValueCoffees
 import com.maurofmorato.cafecomnota.ui.model.mostReviewedCoffees
 import com.maurofmorato.cafecomnota.ui.model.topRatedCoffees
+import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
+import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 
 private enum class RankingFilter(
     val analyticsValue: String
@@ -36,17 +39,18 @@ private enum class RankingFilter(
 fun RankingScreen(
     innerPadding: PaddingValues,
     strings: AppStrings,
+    coffees: List<CoffeeUiModel>,
     onOpenCoffee: (String) -> Unit,
-    onNavigate: (com.maurofmorato.cafecomnota.ui.navigation.AppDestination) -> Unit
+    onNavigate: (AppDestination) -> Unit
 ) {
     val selectedFilter = remember {
         mutableStateOf(RankingFilter.Best)
     }
 
-    val coffees = when (selectedFilter.value) {
-        RankingFilter.Best -> topRatedCoffees()
-        RankingFilter.Value -> bestValueCoffees()
-        RankingFilter.Reviews -> mostReviewedCoffees()
+    val rankedCoffees = when (selectedFilter.value) {
+        RankingFilter.Best -> topRatedCoffees(coffees)
+        RankingFilter.Value -> bestValueCoffees(coffees)
+        RankingFilter.Reviews -> mostReviewedCoffees(coffees)
     }
 
     CafeResponsiveContent(
@@ -89,17 +93,24 @@ fun RankingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        coffees.forEachIndexed { index, coffee ->
-            CoffeeRankingItem(
-                position = index + 1,
-                coffee = coffee,
-                reviewLabel = strings.detailReviews,
-                onClick = {
-                    onOpenCoffee(coffee.id)
-                }
+        if (rankedCoffees.isEmpty()) {
+            Text(
+                text = "O ranking aparecerá depois das primeiras avaliações. Os cafés do catálogo continuam disponíveis na busca.",
+                color = CoffeeMuted
             )
+        } else {
+            rankedCoffees.forEachIndexed { index, coffee ->
+                CoffeeRankingItem(
+                    position = index + 1,
+                    coffee = coffee,
+                    reviewLabel = strings.detailReviews,
+                    onClick = {
+                        onOpenCoffee(coffee.id)
+                    }
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }

@@ -1,9 +1,5 @@
 package com.maurofmorato.cafecomnota.ui.model
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-
 data class CoffeeUiModel(
     val id: String,
     val name: String,
@@ -22,25 +18,19 @@ data class CoffeeUiModel(
     val acidity: Double,
     val bitterness: Double,
     val sweetness: Double,
-    val valueRating: Double
-)
+    val valueRating: Double,
+    val price250g: Double = if (priceKg > 0.0) priceKg / 4.0 else 0.0,
+    val lastPriceDate: String? = null,
+    val totalPriceRecords: Int = 0
+) {
+    val hasRating: Boolean
+        get() = rating > 0.0 && totalReviews > 0
 
-object CoffeeStore {
-    var coffees by mutableStateOf(localSampleCoffees())
-        private set
-
-    fun replaceCoffees(newCoffees: List<CoffeeUiModel>) {
-        coffees = newCoffees.ifEmpty {
-            localSampleCoffees()
-        }
-    }
+    val hasPrice: Boolean
+        get() = priceKg > 0.0
 }
 
 fun sampleCoffees(): List<CoffeeUiModel> {
-    return CoffeeStore.coffees
-}
-
-fun localSampleCoffees(): List<CoffeeUiModel> {
     return listOf(
         CoffeeUiModel(
             id = "1",
@@ -65,7 +55,9 @@ fun localSampleCoffees(): List<CoffeeUiModel> {
             acidity = 3.2,
             bitterness = 2.7,
             sweetness = 4.2,
-            valueRating = 4.6
+            valueRating = 4.6,
+            lastPriceDate = "2026-06-01",
+            totalPriceRecords = 4
         ),
 
         CoffeeUiModel(
@@ -91,7 +83,9 @@ fun localSampleCoffees(): List<CoffeeUiModel> {
             acidity = 3.8,
             bitterness = 2.3,
             sweetness = 4.4,
-            valueRating = 4.0
+            valueRating = 4.0,
+            lastPriceDate = "2026-05-20",
+            totalPriceRecords = 2
         ),
 
         CoffeeUiModel(
@@ -117,7 +111,9 @@ fun localSampleCoffees(): List<CoffeeUiModel> {
             acidity = 2.6,
             bitterness = 4.2,
             sweetness = 2.4,
-            valueRating = 4.2
+            valueRating = 4.2,
+            lastPriceDate = "2026-06-10",
+            totalPriceRecords = 6
         ),
 
         CoffeeUiModel(
@@ -143,39 +139,62 @@ fun localSampleCoffees(): List<CoffeeUiModel> {
             acidity = 3.9,
             bitterness = 2.0,
             sweetness = 4.8,
-            valueRating = 3.8
+            valueRating = 3.8,
+            lastPriceDate = "2026-04-15",
+            totalPriceRecords = 3
         )
     )
 }
 
-fun findCoffeeById(id: String): CoffeeUiModel? {
-    return sampleCoffees().firstOrNull { coffee ->
+fun findCoffeeById(
+    id: String,
+    coffees: List<CoffeeUiModel> = sampleCoffees()
+): CoffeeUiModel? {
+    return coffees.firstOrNull { coffee ->
         coffee.id == id
     }
 }
 
-fun topRatedCoffees(): List<CoffeeUiModel> {
-    return sampleCoffees().sortedWith(
-        compareByDescending<CoffeeUiModel> { coffee ->
-            coffee.rating
-        }.thenByDescending { coffee ->
+fun topRatedCoffees(
+    coffees: List<CoffeeUiModel> = sampleCoffees()
+): List<CoffeeUiModel> {
+    return coffees
+        .filter { coffee ->
+            coffee.hasRating
+        }
+        .sortedWith(
+            compareByDescending<CoffeeUiModel> { coffee ->
+                coffee.rating
+            }.thenByDescending { coffee ->
+                coffee.totalReviews
+            }
+        )
+}
+
+fun bestValueCoffees(
+    coffees: List<CoffeeUiModel> = sampleCoffees()
+): List<CoffeeUiModel> {
+    return coffees
+        .filter { coffee ->
+            coffee.hasRating
+        }
+        .sortedWith(
+            compareByDescending<CoffeeUiModel> { coffee ->
+                coffee.valueRating
+            }.thenBy { coffee ->
+                if (coffee.priceKg > 0.0) coffee.priceKg else Double.MAX_VALUE
+            }
+        )
+}
+
+fun mostReviewedCoffees(
+    coffees: List<CoffeeUiModel> = sampleCoffees()
+): List<CoffeeUiModel> {
+    return coffees
+        .filter { coffee ->
+            coffee.hasRating
+        }
+        .sortedByDescending { coffee ->
             coffee.totalReviews
         }
-    )
-}
-
-fun bestValueCoffees(): List<CoffeeUiModel> {
-    return sampleCoffees().sortedWith(
-        compareByDescending<CoffeeUiModel> { coffee ->
-            coffee.valueRating
-        }.thenBy { coffee ->
-            coffee.priceKg
-        }
-    )
-}
-
-fun mostReviewedCoffees(): List<CoffeeUiModel> {
-    return sampleCoffees().sortedByDescending { coffee ->
-        coffee.totalReviews
-    }
 }

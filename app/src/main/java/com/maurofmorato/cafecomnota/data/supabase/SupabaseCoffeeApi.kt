@@ -16,7 +16,6 @@ class SupabaseCoffeeApi {
         return withContext(Dispatchers.IO) {
             val query = buildQuery()
             val url = URL("${SupabaseConfig.COFFEES_SUMMARY_ENDPOINT}?$query")
-
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 12_000
@@ -51,7 +50,7 @@ class SupabaseCoffeeApi {
 
     private fun buildQuery(): String {
         val select = encode("*")
-        val order = encode("nota_media.desc.nullslast,total_avaliacoes.desc.nullslast")
+        val order = encode("total_avaliacoes.desc.nullslast,nota_media.desc.nullslast,nome.asc")
 
         return "select=$select&order=$order"
     }
@@ -85,8 +84,9 @@ class SupabaseCoffeeApi {
     }
 
     private fun JSONObject.toCoffeeUiModel(): CoffeeUiModel {
-        val id = optStringOrNull("id")
-            ?: optStringOrNull("cafe_id")
+        val id = optStringOrNull("cafe_id")
+            ?: optStringOrNull("id")
+            ?: optStringOrNull("codigo")
             ?: "supabase_${hashCode()}"
 
         val name = optStringOrNull("nome")
@@ -99,14 +99,18 @@ class SupabaseCoffeeApi {
             ?: optStringOrNull("brand")
             ?: "Marca não informada"
 
-        val type = optStringOrNull("tipo_cafe")
+        val rawType = optStringOrNull("tipo_cafe")
             ?: optStringOrNull("tipo")
             ?: optStringOrNull("type")
-            ?: "Café"
+            ?: "cafe"
 
-        val roast = optStringOrNull("torra")
+        val rawRoast = optStringOrNull("torra")
             ?: optStringOrNull("roast")
-            ?: "Torra não informada"
+            ?: "nao_informada"
+
+        val type = displayCoffeeType(rawType)
+        val roast = displayRoast(rawRoast)
+        val category = optStringOrNull("categoria")
 
         val rating = optDoubleOrNull("nota_media")
             ?: optDoubleOrNull("rating")
@@ -118,24 +122,39 @@ class SupabaseCoffeeApi {
             ?: optIntOrNull("qtd_avaliacoes")
             ?: 0
 
-        val priceKg = optDoubleOrNull("preco_medio_por_kg")
+        val priceKg = optDoubleOrNull("preco_kg_medio")
+            ?: optDoubleOrNull("preco_medio_por_kg")
             ?: optDoubleOrNull("preco_por_kg_medio")
             ?: optDoubleOrNull("price_kg")
             ?: 0.0
+
+        val price250g = optDoubleOrNull("preco_250g_medio")
+            ?: if (priceKg > 0.0) priceKg / 4.0 else 0.0
+
+        val lastPriceDate = optStringOrNull("ultimo_preco_em")
+        val totalPriceRecords = optIntOrNull("total_precos") ?: 0
 
         val wouldBuyAgainPercent = optIntOrNull("percentual_compraria_novamente")
             ?: optIntOrNull("compraria_novamente_percentual")
             ?: optIntOrNull("would_buy_again_percent")
             ?: 0
 
-        val normalizedRating = if (rating > 0.0) {
+        val tags = buildTags(
+            type = type,
+            roast = roast,
+            category = category,
+            rating = rating,
+            priceKg = priceKg
+        )
+
+        val normalizedRating = if (rating > 0.0 && totalReviews > 0) {
             rating.coerceIn(1.0, 5.0)
         } else {
             0.0
         }
 
         val valueRating = when {
-            priceKg <= 0.0 && normalizedRating <= 0.0 -> 0.0
+            normalizedRating <= 0.0 -> 0.0
             priceKg <= 0.0 -> normalizedRating
             priceKg <= 60.0 -> (normalizedRating + 0.5).coerceAtMost(5.0)
             priceKg <= 90.0 -> normalizedRating
@@ -155,33 +174,20 @@ class SupabaseCoffeeApi {
             description = buildDescription(
                 name = name,
                 brand = brand,
-                totalReviews = totalReviews
+                totalReviews = totalReviews,
+                totalPriceRecords = totalPriceRecords
             ),
-            tags = buildTags(
-                type = type,
-                roast = roast,
-                rating = normalizedRating,
-                priceKg = priceKg
-            ),
+            tags = tags,
             aroma = normalizedRating,
             flavor = normalizedRating,
             body = normalizedRating,
-            acidity = if (normalizedRating > 0.0) {
-                (normalizedRating - 0.2).coerceAtLeast(1.0)
-            } else {
-                0.0
-            },
-            bitterness = if (normalizedRating > 0.0) {
-                (5.2 - normalizedRating).coerceIn(1.0, 5.0)
-            } else {
-                0.0
-            },
-            sweetness = if (normalizedRating > 0.0) {
-                (normalizedRating - 0.1).coerceAtLeast(1.0)
-            } else {
-                0.0
-            },
-            valueRating = valueRating
+            acidity = if (normalizedRating > 0.0) (normalizedRating - 0.2).coerceAtLeast(1.0) else 0.0,
+            bitterness = if (normalizedRating > 0.0) (5.2 - normalizedRating).coerceIn(1.0, 5.0) else 0.0,
+            sweetness = if (normalizedRating > 0.0) (normalizedRating - 0.1).coerceAtLeast(1.0) else 0.0,
+            valueRating = valueRating,
+            price250g = price250g,
+            lastPriceDate = lastPriceDate,
+            totalPriceRecords = totalPriceRecords
         )
     }
 
@@ -234,6 +240,7 @@ class SupabaseCoffeeApi {
     private fun buildTags(
         type: String,
         roast: String,
+        category: String?,
         rating: Double,
         priceKg: Double
     ): List<String> {
@@ -245,6 +252,10 @@ class SupabaseCoffeeApi {
 
         if (roast.isNotBlank()) {
             tags.add(roast)
+        }
+
+        if (!category.isNullOrBlank()) {
+            tags.add(category)
         }
 
         if (rating >= 4.5) {
@@ -261,12 +272,46 @@ class SupabaseCoffeeApi {
     private fun buildDescription(
         name: String,
         brand: String,
-        totalReviews: Int
+        totalReviews: Int,
+        totalPriceRecords: Int
     ): String {
-        return if (totalReviews > 0) {
-            "$name, da marca $brand, já possui avaliações reais na base do Café com nota."
-        } else {
-            "$name, da marca $brand, está cadastrado na base do Café com nota e aguardando as primeiras avaliações."
+        return when {
+            totalReviews > 0 && totalPriceRecords > 0 -> {
+                "$name, da marca $brand, já possui avaliações e registros de preço na base do Café com nota."
+            }
+
+            totalReviews > 0 -> {
+                "$name, da marca $brand, já possui avaliações reais na base do Café com nota."
+            }
+
+            else -> {
+                "$name, da marca $brand, está cadastrado no catálogo inicial e aguardando as primeiras avaliações."
+            }
+        }
+    }
+
+    private fun displayCoffeeType(value: String): String {
+        return when (value.lowercase().trim()) {
+            "grao", "graos", "grão", "grãos" -> "Grãos"
+            "moido", "moído" -> "Moído"
+            "capsula", "capsulas", "cápsula", "cápsulas" -> "Cápsula"
+            else -> value.replaceFirstChar { char ->
+                char.titlecase()
+            }
+        }
+    }
+
+    private fun displayRoast(value: String): String {
+        return when (value.lowercase().trim()) {
+            "clara" -> "Clara"
+            "media", "média" -> "Média"
+            "media_clara", "média clara" -> "Média clara"
+            "media_escura", "média escura" -> "Média escura"
+            "escura" -> "Escura"
+            "nao_informada", "não informada" -> "Torra não informada"
+            else -> value.replace("_", " ").replaceFirstChar { char ->
+                char.titlecase()
+            }
         }
     }
 }

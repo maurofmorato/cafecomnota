@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.components.formatPrice250g
 import com.maurofmorato.cafecomnota.ui.components.formatPriceKg
 import com.maurofmorato.cafecomnota.ui.components.formatRating
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
@@ -113,15 +114,43 @@ fun CoffeeDetailScreen(
             SummaryCard(
                 modifier = Modifier.weight(1f),
                 title = strings.detailPricePerKg,
-                value = formatPriceKg(coffee.priceKg),
+                value = if (coffee.hasPrice) {
+                    formatPriceKg(coffee.priceKg)
+                } else {
+                    "Ainda não informado"
+                },
+                supportingText = if (coffee.hasPrice && coffee.price250g > 0.0) {
+                    "Equivale a ${formatPrice250g(coffee.price250g)}"
+                } else {
+                    "Informe um preço na avaliação"
+                },
                 iconKind = SummaryIcon.Price
             )
 
             SummaryCard(
                 modifier = Modifier.weight(1f),
                 title = strings.detailWouldBuyAgain,
-                value = "${coffee.wouldBuyAgainPercent}%",
+                value = if (coffee.hasRating) {
+                    "${coffee.wouldBuyAgainPercent}%"
+                } else {
+                    "—"
+                },
+                supportingText = if (coffee.hasRating) {
+                    "Baseado nas avaliações"
+                } else {
+                    "Aguardando avaliações"
+                },
                 iconKind = SummaryIcon.BuyAgain
+            )
+        }
+
+        if (coffee.hasPrice) {
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = buildPriceFreshnessText(coffee),
+                color = CoffeeMuted,
+                fontSize = 13.sp
             )
         }
 
@@ -148,13 +177,21 @@ fun CoffeeDetailScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        RatingMetric(title = "Aroma", value = coffee.aroma)
-        RatingMetric(title = "Sabor", value = coffee.flavor)
-        RatingMetric(title = "Corpo", value = coffee.body)
-        RatingMetric(title = "Acidez", value = coffee.acidity)
-        RatingMetric(title = "Amargor", value = coffee.bitterness)
-        RatingMetric(title = "Doçura", value = coffee.sweetness)
-        RatingMetric(title = strings.shortcutBestValue, value = coffee.valueRating)
+        if (coffee.hasRating) {
+            RatingMetric(title = "Aroma", value = coffee.aroma)
+            RatingMetric(title = "Sabor", value = coffee.flavor)
+            RatingMetric(title = "Corpo", value = coffee.body)
+            RatingMetric(title = "Acidez", value = coffee.acidity)
+            RatingMetric(title = "Amargor", value = coffee.bitterness)
+            RatingMetric(title = "Doçura", value = coffee.sweetness)
+            RatingMetric(title = strings.shortcutBestValue, value = coffee.valueRating)
+        } else {
+            Text(
+                text = "As notas detalhadas aparecerão depois das primeiras avaliações.",
+                color = CoffeeMuted,
+                fontSize = 15.sp
+            )
+        }
 
         Spacer(modifier = Modifier.height(10.dp))
     }
@@ -234,18 +271,24 @@ private fun CoffeeMainCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = formatRating(coffee.rating),
+                            text = if (coffee.hasRating) {
+                                formatRating(coffee.rating)
+                            } else {
+                                "—"
+                            },
                             color = CoffeeBrownDark,
                             fontSize = 38.sp,
                             fontWeight = FontWeight.Bold
                         )
 
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = CoffeeGold,
-                            modifier = Modifier.padding(start = 6.dp)
-                        )
+                        if (coffee.hasRating) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = CoffeeGold,
+                                modifier = Modifier.padding(start = 6.dp)
+                            )
+                        }
                     }
                 }
 
@@ -266,6 +309,16 @@ private fun CoffeeMainCard(
                     )
                 }
             }
+
+            if (!coffee.hasRating) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Aguardando avaliações",
+                    color = CoffeeMuted,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }
@@ -280,6 +333,7 @@ private fun SummaryCard(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
+    supportingText: String,
     iconKind: SummaryIcon
 ) {
     Card(
@@ -317,6 +371,15 @@ private fun SummaryCard(
                 color = CoffeeBrownDark,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = supportingText,
+                color = CoffeeMuted,
+                fontSize = 12.sp,
+                lineHeight = 15.sp
             )
         }
     }
@@ -388,5 +451,26 @@ private fun RatingMetric(
             color = CoffeeGold,
             trackColor = CoffeeLine
         )
+    }
+}
+
+private fun buildPriceFreshnessText(
+    coffee: CoffeeUiModel
+): String {
+    val total = coffee.totalPriceRecords
+    val date = coffee.lastPriceDate
+
+    return when {
+        total > 0 && !date.isNullOrBlank() -> {
+            "Preço baseado em $total registro(s). Último preço informado em $date."
+        }
+
+        total > 0 -> {
+            "Preço baseado em $total registro(s)."
+        }
+
+        else -> {
+            "Preço ainda sem histórico."
+        }
     }
 }
