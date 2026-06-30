@@ -40,6 +40,7 @@ import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.formatPriceKg
 import com.maurofmorato.cafecomnota.ui.components.formatRating
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrownDark
@@ -52,6 +53,7 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeText
 @Composable
 fun CoffeeDetailScreen(
     innerPadding: PaddingValues,
+    strings: AppStrings,
     coffee: CoffeeUiModel,
     onBack: () -> Unit,
     onReview: () -> Unit
@@ -64,16 +66,22 @@ fun CoffeeDetailScreen(
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Voltar",
+                contentDescription = strings.commonBack,
                 tint = CoffeeBrown
             )
         }
 
-        CafeHeader(compact = true)
+        CafeHeader(
+            strings = strings,
+            compact = true
+        )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        CoffeeMainCard(coffee = coffee)
+        CoffeeMainCard(
+            strings = strings,
+            coffee = coffee
+        )
 
         Spacer(modifier = Modifier.height(18.dp))
 
@@ -87,14 +95,14 @@ fun CoffeeDetailScreen(
             )
 
             Text(
-                text = "Dar minha nota",
+                text = strings.detailGiveMyRating,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Resumo")
+        SectionTitle(title = strings.detailSummary)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -104,14 +112,14 @@ fun CoffeeDetailScreen(
         ) {
             SummaryCard(
                 modifier = Modifier.weight(1f),
-                title = "Preço por kg",
+                title = strings.detailPricePerKg,
                 value = formatPriceKg(coffee.priceKg),
                 iconKind = SummaryIcon.Price
             )
 
             SummaryCard(
                 modifier = Modifier.weight(1f),
-                title = "Comprariam",
+                title = strings.detailWouldBuyAgain,
                 value = "${coffee.wouldBuyAgainPercent}%",
                 iconKind = SummaryIcon.BuyAgain
             )
@@ -119,7 +127,7 @@ fun CoffeeDetailScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        SectionTitle(title = "Perfil percebido")
+        SectionTitle(title = strings.detailPerceivedProfile)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -136,7 +144,7 @@ fun CoffeeDetailScreen(
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Notas detalhadas")
+        SectionTitle(title = strings.detailDetailedScores)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -146,7 +154,7 @@ fun CoffeeDetailScreen(
         RatingMetric(title = "Acidez", value = coffee.acidity)
         RatingMetric(title = "Amargor", value = coffee.bitterness)
         RatingMetric(title = "Doçura", value = coffee.sweetness)
-        RatingMetric(title = "Custo-benefício", value = coffee.valueRating)
+        RatingMetric(title = strings.shortcutBestValue, value = coffee.valueRating)
 
         Spacer(modifier = Modifier.height(10.dp))
     }
@@ -154,6 +162,7 @@ fun CoffeeDetailScreen(
 
 @Composable
 private fun CoffeeMainCard(
+    strings: AppStrings,
     coffee: CoffeeUiModel
 ) {
     Card(
@@ -200,7 +209,7 @@ private fun CoffeeMainCard(
                     )
 
                     Text(
-                        text = "${coffee.brand} • ${coffee.type} • Torra ${coffee.roast}",
+                        text = "${coffee.brand} • ${coffee.type} • ${coffee.roast}",
                         color = CoffeeMuted,
                         fontSize = 14.sp
                     )
@@ -216,7 +225,7 @@ private fun CoffeeMainCard(
             ) {
                 androidx.compose.foundation.layout.Column {
                     Text(
-                        text = "Nota média",
+                        text = strings.detailAverageRating,
                         color = CoffeeMuted,
                         fontSize = 14.sp
                     )
@@ -251,7 +260,7 @@ private fun CoffeeMainCard(
                     )
 
                     Text(
-                        text = "avaliações",
+                        text = strings.detailReviews,
                         color = CoffeeMuted,
                         fontSize = 14.sp
                     )

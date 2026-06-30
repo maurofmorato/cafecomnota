@@ -29,6 +29,7 @@ import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeCard
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeGold
@@ -38,6 +39,7 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 @Composable
 fun AddCoffeeScreen(
     innerPadding: PaddingValues,
+    strings: AppStrings,
     onBack: () -> Unit
 ) {
     val coffeeName = remember { mutableStateOf("") }
@@ -55,16 +57,19 @@ fun AddCoffeeScreen(
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Voltar",
+                contentDescription = strings.commonBack,
                 tint = CoffeeBrown
             )
         }
 
-        CafeHeader(compact = true)
+        CafeHeader(
+            strings = strings,
+            compact = true
+        )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Cadastrar café novo")
+        SectionTitle(title = strings.addCoffeeTitle)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -82,13 +87,13 @@ fun AddCoffeeScreen(
                 modifier = Modifier.padding(18.dp)
             ) {
                 Text(
-                    text = "Dados básicos do café",
+                    text = strings.addCoffeeBasicData,
                     color = CoffeeBrown,
                     style = androidx.compose.material3.MaterialTheme.typography.titleLarge
                 )
 
                 Text(
-                    text = "Cadastro ainda local. Depois vamos salvar no Supabase.",
+                    text = strings.addCoffeeInfo,
                     color = CoffeeMuted
                 )
 
@@ -99,8 +104,8 @@ fun AddCoffeeScreen(
                     onValueChange = {
                         coffeeName.value = it
                     },
-                    label = "Nome do café",
-                    placeholder = "Ex.: Gourmet Cerrado Mineiro"
+                    label = strings.addCoffeeName,
+                    placeholder = strings.addCoffeeNameExample
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -110,8 +115,8 @@ fun AddCoffeeScreen(
                     onValueChange = {
                         brand.value = it
                     },
-                    label = "Marca ou torrefação",
-                    placeholder = "Ex.: 3 Corações"
+                    label = strings.addCoffeeBrand,
+                    placeholder = strings.addCoffeeBrandExample
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -121,8 +126,8 @@ fun AddCoffeeScreen(
                     onValueChange = {
                         type.value = it
                     },
-                    label = "Tipo",
-                    placeholder = "Ex.: moído, grão, cápsula"
+                    label = strings.addCoffeeType,
+                    placeholder = strings.addCoffeeTypeExample
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -132,8 +137,8 @@ fun AddCoffeeScreen(
                     onValueChange = {
                         roast.value = it
                     },
-                    label = "Torra",
-                    placeholder = "Ex.: clara, média, escura"
+                    label = strings.addCoffeeRoast,
+                    placeholder = strings.addCoffeeRoastExample
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -143,8 +148,8 @@ fun AddCoffeeScreen(
                     onValueChange = {
                         defaultWeight.value = it
                     },
-                    label = "Peso padrão em gramas",
-                    placeholder = "Ex.: 250",
+                    label = strings.addCoffeeDefaultWeight,
+                    placeholder = strings.addCoffeeDefaultWeightExample,
                     keyboardType = KeyboardType.Number
                 )
 
@@ -155,8 +160,8 @@ fun AddCoffeeScreen(
                     onValueChange = {
                         barcode.value = it
                     },
-                    label = "Código de barras",
-                    placeholder = "Opcional",
+                    label = strings.addCoffeeBarcode,
+                    placeholder = strings.addCoffeeBarcodeOptional,
                     keyboardType = KeyboardType.Number
                 )
 
@@ -181,7 +186,7 @@ fun AddCoffeeScreen(
                     )
 
                     Text(
-                        text = "Cadastrar café em breve",
+                        text = strings.addCoffeeSaveSoon,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }

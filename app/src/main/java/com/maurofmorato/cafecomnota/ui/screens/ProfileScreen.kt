@@ -2,20 +2,25 @@ package com.maurofmorato.cafecomnota.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
@@ -27,25 +32,34 @@ import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.i18n.AppLanguage
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeCard
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeCream
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
     innerPadding: PaddingValues,
+    strings: AppStrings,
+    currentLanguage: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit,
     onNavigate: (AppDestination) -> Unit
 ) {
     CafeResponsiveContent(
         innerPadding = innerPadding
     ) {
-        CafeHeader(compact = true)
+        CafeHeader(
+            strings = strings,
+            compact = true
+        )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Perfil")
+        SectionTitle(title = strings.profileTitle)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -63,7 +77,7 @@ fun ProfileScreen(
                 modifier = Modifier.padding(18.dp)
             ) {
                 Text(
-                    text = "Visitante",
+                    text = strings.profileVisitor,
                     color = CoffeeBrown,
                     style = androidx.compose.material3.MaterialTheme.typography.titleLarge
                 )
@@ -71,7 +85,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Em breve: login para avaliar cafés, cadastrar novos produtos e ver seu histórico.",
+                    text = strings.profileVisitorInfo,
                     color = CoffeeMuted
                 )
             }
@@ -89,10 +103,10 @@ fun ProfileScreen(
         ) {
             ListItem(
                 headlineContent = {
-                    Text("Entrar com Google")
+                    Text(strings.profileLoginGoogle)
                 },
                 supportingContent = {
-                    Text("Será ligado ao Supabase Auth depois")
+                    Text(strings.profileLoginGoogleInfo)
                 },
                 leadingContent = {
                     Icon(
@@ -105,10 +119,10 @@ fun ProfileScreen(
 
             ListItem(
                 headlineContent = {
-                    Text("Minhas avaliações")
+                    Text(strings.profileMyReviews)
                 },
                 supportingContent = {
-                    Text("Histórico dos cafés que você avaliou")
+                    Text(strings.profileMyReviewsInfo)
                 },
                 leadingContent = {
                     Icon(
@@ -121,10 +135,10 @@ fun ProfileScreen(
 
             ListItem(
                 headlineContent = {
-                    Text("Cafés que compraria novamente")
+                    Text(strings.profileBuyAgain)
                 },
                 supportingContent = {
-                    Text("Sua lista pessoal de bons cafés")
+                    Text(strings.profileBuyAgainInfo)
                 },
                 leadingContent = {
                     Icon(
@@ -134,6 +148,59 @@ fun ProfileScreen(
                     )
                 }
             )
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = CoffeeCard
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 3.dp
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp)
+            ) {
+                ListItem(
+                    headlineContent = {
+                        Text(strings.profileLanguage)
+                    },
+                    supportingContent = {
+                        Text(strings.profileLanguageInfo)
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Language,
+                            contentDescription = null,
+                            tint = CoffeeBrown
+                        )
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AppLanguage.values().forEach { language ->
+                        FilterChip(
+                            selected = currentLanguage == language,
+                            onClick = {
+                                onLanguageChange(language)
+                            },
+                            label = {
+                                Text(language.nativeName)
+                            }
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
@@ -164,7 +231,7 @@ fun ProfileScreen(
             )
 
             Text(
-                text = "Registrar teste não fatal",
+                text = strings.profileNonFatalTest,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }

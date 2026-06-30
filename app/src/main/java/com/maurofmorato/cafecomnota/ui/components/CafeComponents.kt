@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -69,6 +70,7 @@ enum class ShortcutType {
 @Composable
 fun CafeBottomBar(
     currentDestination: AppDestination,
+    strings: AppStrings,
     onNavigate: (AppDestination) -> Unit
 ) {
     Row(
@@ -83,6 +85,7 @@ fun CafeBottomBar(
         BottomItem(
             modifier = Modifier.weight(1f),
             destination = AppDestination.Home,
+            label = strings.navHome,
             selected = currentDestination == AppDestination.Home,
             icon = Icons.Default.Home,
             onNavigate = onNavigate
@@ -91,6 +94,7 @@ fun CafeBottomBar(
         BottomItem(
             modifier = Modifier.weight(1f),
             destination = AppDestination.Search,
+            label = strings.navSearch,
             selected = currentDestination == AppDestination.Search,
             icon = Icons.Default.Search,
             onNavigate = onNavigate
@@ -99,6 +103,7 @@ fun CafeBottomBar(
         BottomItem(
             modifier = Modifier.weight(1f),
             destination = AppDestination.Ranking,
+            label = strings.navRanking,
             selected = currentDestination == AppDestination.Ranking,
             icon = Icons.Default.BarChart,
             onNavigate = onNavigate
@@ -107,6 +112,7 @@ fun CafeBottomBar(
         BottomItem(
             modifier = Modifier.weight(1f),
             destination = AppDestination.Profile,
+            label = strings.navProfile,
             selected = currentDestination == AppDestination.Profile,
             icon = Icons.Default.Person,
             onNavigate = onNavigate
@@ -118,6 +124,7 @@ fun CafeBottomBar(
 private fun BottomItem(
     modifier: Modifier = Modifier,
     destination: AppDestination,
+    label: String,
     selected: Boolean,
     icon: ImageVector,
     onNavigate: (AppDestination) -> Unit
@@ -137,22 +144,24 @@ private fun BottomItem(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = destination.label,
+            contentDescription = label,
             tint = itemColor,
             modifier = Modifier.size(25.dp)
         )
 
         Text(
-            text = destination.label,
+            text = label,
             color = itemColor,
             fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1
         )
     }
 }
 
 @Composable
 fun CafeHeader(
+    strings: AppStrings,
     compact: Boolean = false
 ) {
     Column(
@@ -172,7 +181,7 @@ fun CafeHeader(
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = "Café com nota",
+                text = strings.appName,
                 color = CoffeeBrownDark,
                 fontSize = if (compact) 28.sp else 34.sp,
                 fontWeight = FontWeight.Bold,
@@ -191,7 +200,7 @@ fun CafeHeader(
             Spacer(modifier = Modifier.size(12.dp))
 
             Text(
-                text = "Descubra se esse café é bom antes de comprar.",
+                text = strings.tagline,
                 color = CoffeeText.copy(alpha = 0.82f),
                 fontSize = 17.sp,
                 textAlign = TextAlign.Center
@@ -325,6 +334,7 @@ fun SectionTitle(title: String) {
 fun CoffeeRankingItem(
     position: Int,
     coffee: CoffeeUiModel,
+    reviewLabel: String,
     onClick: (() -> Unit)? = null
 ) {
     Card(
@@ -390,7 +400,7 @@ fun CoffeeRankingItem(
                 )
 
                 Text(
-                    text = "${formatRating(coffee.rating)} ★ • ${coffee.totalReviews} avaliações",
+                    text = "${formatRating(coffee.rating)} ★ • ${coffee.totalReviews} $reviewLabel",
                     color = CoffeeGold,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold

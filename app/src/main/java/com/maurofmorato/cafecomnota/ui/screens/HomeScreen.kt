@@ -32,6 +32,7 @@ import com.maurofmorato.cafecomnota.ui.components.MainActionCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.ShortcutChip
 import com.maurofmorato.cafecomnota.ui.components.ShortcutType
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.topRatedCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -41,6 +42,7 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeLine
 @Composable
 fun HomeScreen(
     innerPadding: PaddingValues,
+    strings: AppStrings,
     onNavigate: (AppDestination) -> Unit,
     onOpenCoffee: (String) -> Unit
 ) {
@@ -48,11 +50,12 @@ fun HomeScreen(
         innerPadding = innerPadding,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        CafeHeader()
+        CafeHeader(strings = strings)
 
         Spacer(modifier = Modifier.height(22.dp))
 
         HomeSearchBar(
+            strings = strings,
             onSearchClick = {
                 onNavigate(AppDestination.Search)
             }
@@ -62,8 +65,8 @@ fun HomeScreen(
 
         MainActionCard(
             iconType = ActionIcon.Ranking,
-            title = "Ver ranking dos melhores",
-            subtitle = "Notas, preço por kg e custo-benefício",
+            title = strings.actionRankingTitle,
+            subtitle = strings.actionRankingSubtitle,
             onClick = {
                 onNavigate(AppDestination.Ranking)
             }
@@ -73,8 +76,8 @@ fun HomeScreen(
 
         MainActionCard(
             iconType = ActionIcon.Review,
-            title = "Dar nota a um café",
-            subtitle = "Avalie um café já cadastrado",
+            title = strings.actionReviewTitle,
+            subtitle = strings.actionReviewSubtitle,
             onClick = {
                 CafeAnalytics.logEvent(
                     eventName = AnalyticsEvents.START_REVIEW,
@@ -91,8 +94,8 @@ fun HomeScreen(
 
         MainActionCard(
             iconType = ActionIcon.AddCoffee,
-            title = "Cadastrar café novo",
-            subtitle = "Ajude a base do app crescer",
+            title = strings.actionAddCoffeeTitle,
+            subtitle = strings.actionAddCoffeeSubtitle,
             onClick = {
                 CafeAnalytics.logEvent(
                     eventName = AnalyticsEvents.START_ADD_COFFEE,
@@ -107,7 +110,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(26.dp))
 
-        SectionTitle(title = "Top cafés da semana")
+        SectionTitle(title = strings.sectionTopWeek)
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -115,6 +118,7 @@ fun HomeScreen(
             CoffeeRankingItem(
                 position = index + 1,
                 coffee = coffee,
+                reviewLabel = strings.detailReviews,
                 onClick = {
                     onOpenCoffee(coffee.id)
                 }
@@ -125,7 +129,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        SectionTitle(title = "Atalhos")
+        SectionTitle(title = strings.sectionShortcuts)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -135,7 +139,7 @@ fun HomeScreen(
         ) {
             ShortcutChip(
                 modifier = Modifier.weight(1f),
-                title = "Melhor custo-benefício",
+                title = strings.shortcutBestValue,
                 type = ShortcutType.Value,
                 onClick = {
                     onNavigate(AppDestination.Ranking)
@@ -144,7 +148,7 @@ fun HomeScreen(
 
             ShortcutChip(
                 modifier = Modifier.weight(1f),
-                title = "Mais avaliados",
+                title = strings.shortcutMostReviewed,
                 type = ShortcutType.Star,
                 onClick = {
                     onNavigate(AppDestination.Ranking)
@@ -158,6 +162,7 @@ fun HomeScreen(
 
 @Composable
 private fun HomeSearchBar(
+    strings: AppStrings,
     onSearchClick: () -> Unit
 ) {
     val searchText = remember { mutableStateOf("") }
@@ -177,14 +182,14 @@ private fun HomeSearchBar(
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(
-                    text = "Pesquisar café, marca ou torrefação",
+                    text = strings.searchHomePlaceholder,
                     color = Color.Gray
                 )
             },
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Pesquisar",
+                    contentDescription = strings.navSearch,
                     tint = CoffeeBrown,
                     modifier = Modifier.clickable {
                         onSearchClick()

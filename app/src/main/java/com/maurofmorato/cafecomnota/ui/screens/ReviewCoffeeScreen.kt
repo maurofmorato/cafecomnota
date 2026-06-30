@@ -38,6 +38,7 @@ import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.formatPriceKg
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeCard
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeGold
@@ -47,6 +48,7 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 @Composable
 fun ReviewCoffeeScreen(
     innerPadding: PaddingValues,
+    strings: AppStrings,
     coffeeId: String,
     coffeeName: String,
     onBack: () -> Unit
@@ -99,16 +101,19 @@ fun ReviewCoffeeScreen(
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Voltar",
+                contentDescription = strings.commonBack,
                 tint = CoffeeBrown
             )
         }
 
-        CafeHeader(compact = true)
+        CafeHeader(
+            strings = strings,
+            compact = true
+        )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Dar nota")
+        SectionTitle(title = strings.reviewTitle)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -132,14 +137,14 @@ fun ReviewCoffeeScreen(
                 )
 
                 Text(
-                    text = "Avaliação rápida. A ligação com o Supabase entra na próxima etapa.",
+                    text = "${strings.reviewQuickTitleSuffix}. ${strings.reviewQuickInfo}",
                     color = CoffeeMuted
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
-                    text = "Nota geral",
+                    text = strings.reviewGeneralRating,
                     color = CoffeeBrown
                 )
 
@@ -149,7 +154,7 @@ fun ReviewCoffeeScreen(
                     for (star in 1..5) {
                         Icon(
                             imageVector = Icons.Default.Star,
-                            contentDescription = "Nota $star",
+                            contentDescription = "${strings.reviewGeneralRating} $star",
                             tint = if (star <= rating.intValue) CoffeeGold else CoffeeLine,
                             modifier = Modifier
                                 .padding(end = 6.dp)
@@ -169,10 +174,10 @@ fun ReviewCoffeeScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text("Preço pago")
+                        Text(strings.reviewPricePaid)
                     },
                     placeholder = {
-                        Text("Ex.: 18,90")
+                        Text(strings.reviewPricePaidExample)
                     },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
@@ -196,10 +201,10 @@ fun ReviewCoffeeScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text("Peso da embalagem em gramas")
+                        Text(strings.reviewWeightGrams)
                     },
                     placeholder = {
-                        Text("Ex.: 250")
+                        Text(strings.reviewWeightExample)
                     },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
@@ -218,9 +223,9 @@ fun ReviewCoffeeScreen(
 
                 Text(
                     text = if (priceKg.value != null) {
-                        "Preço estimado por kg: ${formatPriceKg(priceKg.value!!)}"
+                        "${strings.reviewPriceKgPrefix} ${formatPriceKg(priceKg.value!!)}"
                     } else {
-                        "Preço estimado por kg: informe preço e peso"
+                        strings.reviewPriceKgMissing
                     },
                     color = CoffeeBrown
                 )
@@ -231,7 +236,7 @@ fun ReviewCoffeeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Compraria novamente?",
+                        text = strings.reviewWouldBuyAgain,
                         modifier = Modifier.weight(1f),
                         color = CoffeeBrown
                     )
@@ -253,10 +258,10 @@ fun ReviewCoffeeScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text("Comentário")
+                        Text(strings.reviewComment)
                     },
                     placeholder = {
-                        Text("Ex.: Bom no coado, pouco amargo.")
+                        Text(strings.reviewCommentExample)
                     },
                     minLines = 3,
                     colors = TextFieldDefaults.colors(
@@ -290,7 +295,7 @@ fun ReviewCoffeeScreen(
                     )
 
                     Text(
-                        text = "Salvar avaliação em breve",
+                        text = strings.reviewSaveSoon,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }

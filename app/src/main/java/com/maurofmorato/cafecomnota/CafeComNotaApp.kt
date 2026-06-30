@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeBottomBar
+import com.maurofmorato.cafecomnota.ui.i18n.AppLanguage
+import com.maurofmorato.cafecomnota.ui.i18n.stringsFor
 import com.maurofmorato.cafecomnota.ui.model.findCoffeeById
 import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
@@ -37,6 +39,13 @@ fun CafeComNotaApp() {
             mutableStateOf(sampleCoffees().first().id)
         }
 
+        var currentLanguageName by rememberSaveable {
+            mutableStateOf(AppLanguage.Portuguese.name)
+        }
+
+        val currentLanguage = AppLanguage.valueOf(currentLanguageName)
+        val strings = stringsFor(currentLanguage)
+
         val destination = AppDestination.valueOf(currentDestination)
 
         val selectedCoffee = findCoffeeById(selectedCoffeeId)
@@ -51,7 +60,8 @@ fun CafeComNotaApp() {
                 params = mapOf(
                     "from" to destination.analyticsName,
                     "to" to newDestination.analyticsName,
-                    "source" to source
+                    "source" to source,
+                    "language" to currentLanguage.code
                 )
             )
 
@@ -65,15 +75,28 @@ fun CafeComNotaApp() {
                 eventName = AnalyticsEvents.VIEW_COFFEE_DETAIL,
                 params = mapOf(
                     "coffee_id" to coffeeId,
-                    "source" to destination.analyticsName
+                    "source" to destination.analyticsName,
+                    "language" to currentLanguage.code
                 )
             )
 
             currentDestination = AppDestination.CoffeeDetail.name
         }
 
-        LaunchedEffect(destination) {
-            CafeAnalytics.logScreen(destination.analyticsName)
+        fun changeLanguage(language: AppLanguage) {
+            currentLanguageName = language.name
+
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.CHANGE_LANGUAGE,
+                params = mapOf(
+                    "language" to language.code,
+                    "language_name" to language.nativeName
+                )
+            )
+        }
+
+        LaunchedEffect(destination, currentLanguage) {
+            CafeAnalytics.logScreen("${destination.analyticsName}_${currentLanguage.code}")
         }
 
         Surface(
@@ -86,6 +109,7 @@ fun CafeComNotaApp() {
                     if (destination.showInBottomBar) {
                         CafeBottomBar(
                             currentDestination = destination,
+                            strings = strings,
                             onNavigate = {
                                 navigateTo(
                                     newDestination = it,
@@ -99,6 +123,7 @@ fun CafeComNotaApp() {
                 when (destination) {
                     AppDestination.Home -> HomeScreen(
                         innerPadding = innerPadding,
+                        strings = strings,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,
@@ -110,6 +135,7 @@ fun CafeComNotaApp() {
 
                     AppDestination.Search -> SearchScreen(
                         innerPadding = innerPadding,
+                        strings = strings,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,
@@ -121,6 +147,7 @@ fun CafeComNotaApp() {
 
                     AppDestination.Ranking -> RankingScreen(
                         innerPadding = innerPadding,
+                        strings = strings,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,
@@ -132,6 +159,9 @@ fun CafeComNotaApp() {
 
                     AppDestination.Profile -> ProfileScreen(
                         innerPadding = innerPadding,
+                        strings = strings,
+                        currentLanguage = currentLanguage,
+                        onLanguageChange = ::changeLanguage,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,
@@ -142,6 +172,7 @@ fun CafeComNotaApp() {
 
                     AppDestination.CoffeeDetail -> CoffeeDetailScreen(
                         innerPadding = innerPadding,
+                        strings = strings,
                         coffee = selectedCoffee,
                         onBack = {
                             navigateTo(
@@ -154,7 +185,8 @@ fun CafeComNotaApp() {
                                 eventName = AnalyticsEvents.START_REVIEW,
                                 params = mapOf(
                                     "coffee_id" to selectedCoffee.id,
-                                    "coffee_name" to selectedCoffee.name
+                                    "coffee_name" to selectedCoffee.name,
+                                    "language" to currentLanguage.code
                                 )
                             )
 
@@ -167,6 +199,7 @@ fun CafeComNotaApp() {
 
                     AppDestination.ReviewCoffee -> ReviewCoffeeScreen(
                         innerPadding = innerPadding,
+                        strings = strings,
                         coffeeId = selectedCoffee.id,
                         coffeeName = selectedCoffee.name,
                         onBack = {
@@ -179,6 +212,7 @@ fun CafeComNotaApp() {
 
                     AppDestination.AddCoffee -> AddCoffeeScreen(
                         innerPadding = innerPadding,
+                        strings = strings,
                         onBack = {
                             navigateTo(
                                 newDestination = AppDestination.Home,

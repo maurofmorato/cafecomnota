@@ -27,6 +27,7 @@ import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -37,6 +38,7 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 @Composable
 fun SearchScreen(
     innerPadding: PaddingValues,
+    strings: AppStrings,
     onNavigate: (AppDestination) -> Unit,
     onOpenCoffee: (String) -> Unit
 ) {
@@ -78,11 +80,14 @@ fun SearchScreen(
     CafeResponsiveContent(
         innerPadding = innerPadding
     ) {
-        CafeHeader(compact = true)
+        CafeHeader(
+            strings = strings,
+            compact = true
+        )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Buscar café")
+        SectionTitle(title = strings.searchScreenTitle)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -94,14 +99,14 @@ fun SearchScreen(
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(
-                    text = "Digite café, marca ou torrefação",
+                    text = strings.searchScreenPlaceholder,
                     color = Color.Gray
                 )
             },
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Pesquisar",
+                    contentDescription = strings.navSearch,
                     tint = CoffeeBrown
                 )
             },
@@ -120,7 +125,7 @@ fun SearchScreen(
 
         if (filteredCoffees.isEmpty()) {
             Text(
-                text = "Nenhum café encontrado.",
+                text = strings.searchNoCoffeeFound,
                 color = CoffeeMuted
             )
 
@@ -144,7 +149,7 @@ fun SearchScreen(
                 )
 
                 Text(
-                    text = "Cadastrar café novo",
+                    text = strings.commonRegisterNewCoffee,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -153,6 +158,7 @@ fun SearchScreen(
                 CoffeeRankingItem(
                     position = index + 1,
                     coffee = coffee,
+                    reviewLabel = strings.detailReviews,
                     onClick = {
                         onOpenCoffee(coffee.id)
                     }

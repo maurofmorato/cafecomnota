@@ -19,34 +19,25 @@ import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.bestValueCoffees
 import com.maurofmorato.cafecomnota.ui.model.mostReviewedCoffees
 import com.maurofmorato.cafecomnota.ui.model.topRatedCoffees
-import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 
 private enum class RankingFilter(
-    val label: String,
     val analyticsValue: String
 ) {
-    Best(
-        label = "Melhores",
-        analyticsValue = "best"
-    ),
-    Value(
-        label = "Custo-benefício",
-        analyticsValue = "value"
-    ),
-    Reviews(
-        label = "Mais avaliados",
-        analyticsValue = "reviews"
-    )
+    Best("best"),
+    Value("value"),
+    Reviews("reviews")
 }
 
 @Composable
 fun RankingScreen(
     innerPadding: PaddingValues,
-    onNavigate: (AppDestination) -> Unit,
-    onOpenCoffee: (String) -> Unit
+    strings: AppStrings,
+    onOpenCoffee: (String) -> Unit,
+    onNavigate: (com.maurofmorato.cafecomnota.ui.navigation.AppDestination) -> Unit
 ) {
     val selectedFilter = remember {
         mutableStateOf(RankingFilter.Best)
@@ -61,11 +52,14 @@ fun RankingScreen(
     CafeResponsiveContent(
         innerPadding = innerPadding
     ) {
-        CafeHeader(compact = true)
+        CafeHeader(
+            strings = strings,
+            compact = true
+        )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "Ranking")
+        SectionTitle(title = strings.rankingTitle)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -87,7 +81,7 @@ fun RankingScreen(
                         )
                     },
                     label = {
-                        Text(filter.label)
+                        Text(filterLabel(filter, strings))
                     }
                 )
             }
@@ -99,6 +93,7 @@ fun RankingScreen(
             CoffeeRankingItem(
                 position = index + 1,
                 coffee = coffee,
+                reviewLabel = strings.detailReviews,
                 onClick = {
                     onOpenCoffee(coffee.id)
                 }
@@ -106,5 +101,16 @@ fun RankingScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+private fun filterLabel(
+    filter: RankingFilter,
+    strings: AppStrings
+): String {
+    return when (filter) {
+        RankingFilter.Best -> strings.rankingBest
+        RankingFilter.Value -> strings.rankingValue
+        RankingFilter.Reviews -> strings.rankingMostReviewed
     }
 }

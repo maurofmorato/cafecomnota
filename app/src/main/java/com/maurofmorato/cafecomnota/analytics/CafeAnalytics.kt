@@ -162,6 +162,7 @@ object AnalyticsEvents {
     const val SEARCH_COFFEE = "search_coffee"
     const val SEARCH_NOT_FOUND = "search_not_found"
     const val CHANGE_RANKING_FILTER = "change_ranking_filter"
+    const val CHANGE_LANGUAGE = "change_language"
 
     const val START_REVIEW = "start_review"
     const val CALCULATE_PRICE_KG = "calculate_price_kg"
