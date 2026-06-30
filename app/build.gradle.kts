@@ -15,8 +15,8 @@ android {
         applicationId = "com.maurofmorato.cafecomnota"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.4"
+        versionCode = 6
+        versionName = "1.0.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,6 +67,8 @@ dependencies {
 
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     testImplementation(libs.junit)
 

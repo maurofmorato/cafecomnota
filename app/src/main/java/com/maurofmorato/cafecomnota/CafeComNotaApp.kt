@@ -8,13 +8,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
+import com.maurofmorato.cafecomnota.data.repository.CoffeeDataSource
+import com.maurofmorato.cafecomnota.data.repository.CoffeeRepository
 import com.maurofmorato.cafecomnota.ui.components.CafeBottomBar
 import com.maurofmorato.cafecomnota.ui.i18n.AppLanguage
 import com.maurofmorato.cafecomnota.ui.i18n.stringsFor
+import com.maurofmorato.cafecomnota.ui.model.CoffeeStore
 import com.maurofmorato.cafecomnota.ui.model.findCoffeeById
 import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
@@ -31,6 +35,10 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeCream
 @Composable
 fun CafeComNotaApp() {
     CafeComNotaTheme {
+        val coffeeRepository = remember {
+            CoffeeRepository()
+        }
+
         var currentDestination by rememberSaveable {
             mutableStateOf(AppDestination.Home.name)
         }
@@ -41,6 +49,10 @@ fun CafeComNotaApp() {
 
         var currentLanguageName by rememberSaveable {
             mutableStateOf(AppLanguage.Portuguese.name)
+        }
+
+        var coffeeDataSource by remember {
+            mutableStateOf(CoffeeDataSource.LocalFallback)
         }
 
         val currentLanguage = AppLanguage.valueOf(currentLanguageName)
@@ -61,7 +73,8 @@ fun CafeComNotaApp() {
                     "from" to destination.analyticsName,
                     "to" to newDestination.analyticsName,
                     "source" to source,
-                    "language" to currentLanguage.code
+                    "language" to currentLanguage.code,
+                    "data_source" to coffeeDataSource.name
                 )
             )
 
@@ -76,7 +89,8 @@ fun CafeComNotaApp() {
                 params = mapOf(
                     "coffee_id" to coffeeId,
                     "source" to destination.analyticsName,
-                    "language" to currentLanguage.code
+                    "language" to currentLanguage.code,
+                    "data_source" to coffeeDataSource.name
                 )
             )
 
@@ -93,6 +107,42 @@ fun CafeComNotaApp() {
                     "language_name" to language.nativeName
                 )
             )
+        }
+
+        LaunchedEffect(Unit) {
+            val result = coffeeRepository.loadCoffees()
+
+            CoffeeStore.replaceCoffees(result.coffees)
+            coffeeDataSource = result.source
+
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.LOAD_COFFEES,
+                params = mapOf(
+                    "source" to result.source.name,
+                    "count" to result.coffees.size,
+                    "has_error" to (result.error != null)
+                )
+            )
+
+            if (result.source == CoffeeDataSource.LocalFallback) {
+                CafeAnalytics.logEvent(
+                    eventName = AnalyticsEvents.LOAD_COFFEES_FALLBACK,
+                    params = mapOf(
+                        "reason" to (result.error?.message ?: "empty_result")
+                    )
+                )
+
+                result.error?.let { error ->
+                    CafeAnalytics.recordNonFatal(
+                        throwable = error,
+                        params = mapOf(
+                            "screen" to "app_start",
+                            "action" to "load_coffees",
+                            "fallback" to true
+                        )
+                    )
+                }
+            }
         }
 
         LaunchedEffect(destination, currentLanguage) {
@@ -186,7 +236,8 @@ fun CafeComNotaApp() {
                                 params = mapOf(
                                     "coffee_id" to selectedCoffee.id,
                                     "coffee_name" to selectedCoffee.name,
-                                    "language" to currentLanguage.code
+                                    "language" to currentLanguage.code,
+                                    "data_source" to coffeeDataSource.name
                                 )
                             )
 

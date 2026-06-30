@@ -164,6 +164,9 @@ object AnalyticsEvents {
     const val CHANGE_RANKING_FILTER = "change_ranking_filter"
     const val CHANGE_LANGUAGE = "change_language"
 
+    const val LOAD_COFFEES = "load_coffees"
+    const val LOAD_COFFEES_FALLBACK = "load_coffees_fallback"
+
     const val START_REVIEW = "start_review"
     const val CALCULATE_PRICE_KG = "calculate_price_kg"
     const val SAVE_REVIEW_TAP = "save_review_tap"

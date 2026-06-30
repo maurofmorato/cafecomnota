@@ -1,5 +1,9 @@
 package com.maurofmorato.cafecomnota.ui.model
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 data class CoffeeUiModel(
     val id: String,
     val name: String,
@@ -9,147 +13,169 @@ data class CoffeeUiModel(
     val rating: Double,
     val totalReviews: Int,
     val priceKg: Double,
-    val valueRating: Double,
     val wouldBuyAgainPercent: Int,
+    val description: String,
+    val tags: List<String>,
     val aroma: Double,
     val flavor: Double,
     val body: Double,
     val acidity: Double,
     val bitterness: Double,
     val sweetness: Double,
-    val description: String,
-    val tags: List<String>
+    val valueRating: Double
 )
 
+object CoffeeStore {
+    var coffees by mutableStateOf(localSampleCoffees())
+        private set
+
+    fun replaceCoffees(newCoffees: List<CoffeeUiModel>) {
+        coffees = newCoffees.ifEmpty {
+            localSampleCoffees()
+        }
+    }
+}
+
 fun sampleCoffees(): List<CoffeeUiModel> {
+    return CoffeeStore.coffees
+}
+
+fun localSampleCoffees(): List<CoffeeUiModel> {
     return listOf(
         CoffeeUiModel(
             id = "1",
-            name = "Orfeu Intenso",
-            brand = "Orfeu",
-            type = "Grão",
+            name = "Cerrado Mineiro Especial",
+            brand = "Torra da Serra",
+            type = "Moído",
             roast = "Média",
-            rating = 4.6,
-            totalReviews = 238,
-            priceKg = 82.70,
-            valueRating = 4.2,
-            wouldBuyAgainPercent = 87,
-            aroma = 4.5,
-            flavor = 4.7,
-            body = 4.4,
-            acidity = 3.1,
-            bitterness = 2.8,
-            sweetness = 3.9,
-            description = "Café encorpado, com boa presença no coado e no espresso. Perfil percebido mais intenso, com baixa acidez.",
-            tags = listOf("Encorpado", "Chocolate", "Baixa acidez")
+            rating = 4.8,
+            totalReviews = 128,
+            priceKg = 68.90,
+            wouldBuyAgainPercent = 94,
+            description = "Café equilibrado, com aroma marcante, baixa acidez e bom desempenho no coado.",
+            tags = listOf(
+                "Chocolate",
+                "Baixa acidez",
+                "Coado",
+                "Custo-benefício"
+            ),
+            aroma = 4.7,
+            flavor = 4.8,
+            body = 4.5,
+            acidity = 3.2,
+            bitterness = 2.7,
+            sweetness = 4.2,
+            valueRating = 4.6
         ),
+
         CoffeeUiModel(
             id = "2",
-            name = "3 Corações Gourmet",
-            brand = "3 Corações",
-            type = "Moído",
-            roast = "Média",
-            rating = 4.3,
-            totalReviews = 184,
-            priceKg = 58.90,
-            valueRating = 4.4,
-            wouldBuyAgainPercent = 81,
-            aroma = 4.1,
-            flavor = 4.2,
-            body = 4.0,
-            acidity = 3.0,
-            bitterness = 3.2,
-            sweetness = 3.5,
-            description = "Boa opção de mercado, com preço mais acessível e avaliação consistente para o dia a dia.",
-            tags = listOf("Custo-benefício", "Mercado", "Coado")
+            name = "Sul de Minas Gourmet",
+            brand = "Café Boa Prosa",
+            type = "Grãos",
+            roast = "Média clara",
+            rating = 4.6,
+            totalReviews = 87,
+            priceKg = 82.50,
+            wouldBuyAgainPercent = 89,
+            description = "Boa opção para quem gosta de café aromático, levemente adocicado e com finalização limpa.",
+            tags = listOf(
+                "Aromático",
+                "Adocicado",
+                "Grãos",
+                "Especial"
+            ),
+            aroma = 4.8,
+            flavor = 4.5,
+            body = 4.1,
+            acidity = 3.8,
+            bitterness = 2.3,
+            sweetness = 4.4,
+            valueRating = 4.0
         ),
+
         CoffeeUiModel(
             id = "3",
-            name = "Melitta Especial",
-            brand = "Melitta",
-            type = "Moído",
-            roast = "Média escura",
-            rating = 4.1,
-            totalReviews = 151,
-            priceKg = 49.80,
-            valueRating = 4.3,
-            wouldBuyAgainPercent = 76,
-            aroma = 3.9,
-            flavor = 4.0,
-            body = 3.8,
-            acidity = 2.7,
-            bitterness = 3.4,
-            sweetness = 3.1,
-            description = "Café simples, fácil de encontrar e com boa relação de preço por kg.",
-            tags = listOf("Popular", "Preço bom", "Dia a dia")
-        ),
-        CoffeeUiModel(
-            id = "4",
-            name = "Santa Monica Premium",
-            brand = "Santa Monica",
-            type = "Grão",
-            roast = "Média",
-            rating = 4.5,
-            totalReviews = 97,
-            priceKg = 96.40,
-            valueRating = 3.9,
-            wouldBuyAgainPercent = 84,
-            aroma = 4.6,
-            flavor = 4.5,
-            body = 4.3,
-            acidity = 3.4,
-            bitterness = 2.6,
-            sweetness = 4.0,
-            description = "Café de perfil mais refinado, com aroma marcante e bom equilíbrio sensorial.",
-            tags = listOf("Especial", "Aromático", "Equilibrado")
-        ),
-        CoffeeUiModel(
-            id = "5",
-            name = "Pilão Tradicional",
-            brand = "Pilão",
+            name = "Tradicional Forte",
+            brand = "Mercado Bom",
             type = "Moído",
             roast = "Escura",
-            rating = 3.8,
-            totalReviews = 312,
-            priceKg = 37.90,
-            valueRating = 4.1,
+            rating = 3.7,
+            totalReviews = 211,
+            priceKg = 39.80,
             wouldBuyAgainPercent = 68,
-            aroma = 3.5,
-            flavor = 3.6,
-            body = 3.7,
-            acidity = 2.3,
-            bitterness = 4.0,
-            sweetness = 2.8,
-            description = "Café tradicional, forte e de preço competitivo. Pode agradar quem prefere torra mais escura.",
-            tags = listOf("Tradicional", "Forte", "Barato")
+            description = "Café popular, forte, de preço baixo, mas com amargor mais presente.",
+            tags = listOf(
+                "Forte",
+                "Mercado",
+                "Barato",
+                "Amargor alto"
+            ),
+            aroma = 3.4,
+            flavor = 3.5,
+            body = 4.0,
+            acidity = 2.6,
+            bitterness = 4.2,
+            sweetness = 2.4,
+            valueRating = 4.2
+        ),
+
+        CoffeeUiModel(
+            id = "4",
+            name = "Orgânico Mantiqueira",
+            brand = "Raiz Café",
+            type = "Grãos",
+            roast = "Média",
+            rating = 4.9,
+            totalReviews = 46,
+            priceKg = 118.00,
+            wouldBuyAgainPercent = 96,
+            description = "Café de perfil especial, com notas doces, corpo agradável e preço mais alto.",
+            tags = listOf(
+                "Orgânico",
+                "Especial",
+                "Doce",
+                "Premium"
+            ),
+            aroma = 4.9,
+            flavor = 4.9,
+            body = 4.7,
+            acidity = 3.9,
+            bitterness = 2.0,
+            sweetness = 4.8,
+            valueRating = 3.8
         )
     )
 }
 
 fun findCoffeeById(id: String): CoffeeUiModel? {
-    return sampleCoffees().firstOrNull {
-        it.id == id
+    return sampleCoffees().firstOrNull { coffee ->
+        coffee.id == id
     }
 }
 
 fun topRatedCoffees(): List<CoffeeUiModel> {
-    return sampleCoffees().sortedByDescending {
-        it.rating
-    }
+    return sampleCoffees().sortedWith(
+        compareByDescending<CoffeeUiModel> { coffee ->
+            coffee.rating
+        }.thenByDescending { coffee ->
+            coffee.totalReviews
+        }
+    )
 }
 
 fun bestValueCoffees(): List<CoffeeUiModel> {
     return sampleCoffees().sortedWith(
-        compareByDescending<CoffeeUiModel> {
-            it.valueRating
-        }.thenBy {
-            it.priceKg
+        compareByDescending<CoffeeUiModel> { coffee ->
+            coffee.valueRating
+        }.thenBy { coffee ->
+            coffee.priceKg
         }
     )
 }
 
 fun mostReviewedCoffees(): List<CoffeeUiModel> {
-    return sampleCoffees().sortedByDescending {
-        it.totalReviews
+    return sampleCoffees().sortedByDescending { coffee ->
+        coffee.totalReviews
     }
 }
