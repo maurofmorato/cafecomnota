@@ -1,7 +1,6 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -53,6 +52,7 @@ fun HomeScreen(
     coffees: List<CoffeeUiModel>,
     dataSource: CoffeeDataSource,
     onNavigate: (AppDestination) -> Unit,
+    onSearch: (String) -> Unit,
     onOpenCoffee: (String) -> Unit
 ) {
     CafeResponsiveContent(
@@ -69,9 +69,7 @@ fun HomeScreen(
 
         HomeSearchBar(
             strings = strings,
-            onSearchClick = {
-                onNavigate(AppDestination.Search)
-            }
+            onSearch = onSearch
         )
 
         Spacer(modifier = Modifier.height(22.dp))
@@ -224,16 +222,14 @@ private fun DataSourceChip(
 @Composable
 private fun HomeSearchBar(
     strings: AppStrings,
-    onSearchClick: () -> Unit
+    onSearch: (String) -> Unit
 ) {
-    val searchText = remember { mutableStateOf("") }
+    val searchText = remember {
+        mutableStateOf("")
+    }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onSearchClick()
-            }
+        modifier = Modifier.fillMaxWidth()
     ) {
         OutlinedTextField(
             value = searchText.value,
@@ -252,9 +248,10 @@ private fun HomeSearchBar(
                     imageVector = Icons.Default.Search,
                     contentDescription = strings.navSearch,
                     tint = CoffeeBrown,
-                    modifier = Modifier.clickable {
-                        onSearchClick()
-                    }
+                    modifier = Modifier
+                        .then(
+                            androidx.compose.ui.Modifier
+                        )
                 )
             },
             singleLine = true,
@@ -267,5 +264,24 @@ private fun HomeSearchBar(
                 cursorColor = CoffeeBrown
             )
         )
+
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            androidx.compose.material3.IconButton(
+                onClick = {
+                    onSearch(searchText.value)
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = strings.navSearch,
+                    tint = CoffeeBrown
+                )
+            }
+        }
     }
 }

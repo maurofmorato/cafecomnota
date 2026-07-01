@@ -111,6 +111,8 @@ class SupabaseCoffeeApi {
         val type = displayCoffeeType(rawType)
         val roast = displayRoast(rawRoast)
         val category = optStringOrNull("categoria")
+        val certification = optStringOrNull("certificacao")
+        val sourceLabel = optStringOrNull("fonte_dado")
 
         val rating = optDoubleOrNull("nota_media")
             ?: optDoubleOrNull("rating")
@@ -139,19 +141,13 @@ class SupabaseCoffeeApi {
             ?: optIntOrNull("would_buy_again_percent")
             ?: 0
 
-        val tags = buildTags(
-            type = type,
-            roast = roast,
-            category = category,
-            rating = rating,
-            priceKg = priceKg
-        )
-
         val normalizedRating = if (rating > 0.0 && totalReviews > 0) {
             rating.coerceIn(1.0, 5.0)
         } else {
             0.0
         }
+
+        val tags = buildTags(type, roast, category, certification, normalizedRating, priceKg)
 
         val valueRating = when {
             normalizedRating <= 0.0 -> 0.0
@@ -171,12 +167,7 @@ class SupabaseCoffeeApi {
             totalReviews = totalReviews,
             priceKg = priceKg,
             wouldBuyAgainPercent = wouldBuyAgainPercent,
-            description = buildDescription(
-                name = name,
-                brand = brand,
-                totalReviews = totalReviews,
-                totalPriceRecords = totalPriceRecords
-            ),
+            description = buildDescription(name, brand, totalReviews, totalPriceRecords),
             tags = tags,
             aroma = normalizedRating,
             flavor = normalizedRating,
@@ -187,7 +178,19 @@ class SupabaseCoffeeApi {
             valueRating = valueRating,
             price250g = price250g,
             lastPriceDate = lastPriceDate,
-            totalPriceRecords = totalPriceRecords
+            totalPriceRecords = totalPriceRecords,
+            productLabel = optStringOrNull("produto_rotulo"),
+            producer = optStringOrNull("produtor"),
+            originRegion = optStringOrNull("origem_regiao"),
+            altitudeMeters = optIntOrNull("altitude_m"),
+            variety = optStringOrNull("variedade"),
+            process = optStringOrNull("processo"),
+            scaScoreText = optStringOrNull("pontuacao_sca_texto"),
+            bodyDescription = optStringOrNull("corpo_descricao"),
+            aromaFlavor = optStringOrNull("aroma_sabor"),
+            acidityDescription = optStringOrNull("acidez_descricao"),
+            certification = certification,
+            dataSourceLabel = displaySourceLabel(sourceLabel)
         )
     }
 
@@ -213,7 +216,6 @@ class SupabaseCoffeeApi {
                 is String -> value
                     .replace(",", ".")
                     .toDoubleOrNull()
-
                 else -> null
             }
         } catch (_: Exception) {
@@ -241,30 +243,18 @@ class SupabaseCoffeeApi {
         type: String,
         roast: String,
         category: String?,
+        certification: String?,
         rating: Double,
         priceKg: Double
     ): List<String> {
         val tags = mutableListOf<String>()
 
-        if (type.isNotBlank()) {
-            tags.add(type)
-        }
-
-        if (roast.isNotBlank()) {
-            tags.add(roast)
-        }
-
-        if (!category.isNullOrBlank()) {
-            tags.add(category)
-        }
-
-        if (rating >= 4.5) {
-            tags.add("Bem avaliado")
-        }
-
-        if (priceKg > 0.0 && priceKg <= 60.0) {
-            tags.add("Bom custo-benefício")
-        }
+        if (type.isNotBlank()) tags.add(type)
+        if (roast.isNotBlank()) tags.add(roast)
+        if (!category.isNullOrBlank()) tags.add(category)
+        if (!certification.isNullOrBlank()) tags.add(certification)
+        if (rating >= 4.5) tags.add("Bem avaliado")
+        if (priceKg > 0.0 && priceKg <= 60.0) tags.add("Bom custo-benefício")
 
         return tags.distinct().take(4)
     }
@@ -276,17 +266,9 @@ class SupabaseCoffeeApi {
         totalPriceRecords: Int
     ): String {
         return when {
-            totalReviews > 0 && totalPriceRecords > 0 -> {
-                "$name, da marca $brand, já possui avaliações e registros de preço na base do Café com nota."
-            }
-
-            totalReviews > 0 -> {
-                "$name, da marca $brand, já possui avaliações reais na base do Café com nota."
-            }
-
-            else -> {
-                "$name, da marca $brand, está cadastrado no catálogo inicial e aguardando as primeiras avaliações."
-            }
+            totalReviews > 0 && totalPriceRecords > 0 -> "$name, da marca $brand, já possui avaliações e registros de preço na base do Café com nota."
+            totalReviews > 0 -> "$name, da marca $brand, já possui avaliações reais na base do Café com nota."
+            else -> "$name, da marca $brand, está cadastrado como informação de catálogo e aguardando as primeiras avaliações."
         }
     }
 
@@ -309,6 +291,20 @@ class SupabaseCoffeeApi {
             "media_escura", "média escura" -> "Média escura"
             "escura" -> "Escura"
             "nao_informada", "não informada" -> "Torra não informada"
+            else -> value.replace("_", " ").replaceFirstChar { char ->
+                char.titlecase()
+            }
+        }
+    }
+
+    private fun displaySourceLabel(value: String?): String? {
+        return when (value?.lowercase()?.trim()) {
+            null, "" -> null
+            "embalagem" -> "Embalagem"
+            "catalogo_manual_inicial" -> "Catálogo inicial"
+            "abic" -> "ABIC"
+            "bsca" -> "BSCA"
+            "sca" -> "SCA"
             else -> value.replace("_", " ").replaceFirstChar { char ->
                 char.titlecase()
             }

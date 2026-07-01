@@ -42,10 +42,19 @@ fun SearchScreen(
     innerPadding: PaddingValues,
     strings: AppStrings,
     coffees: List<CoffeeUiModel>,
+    initialQuery: String = "",
     onNavigate: (AppDestination) -> Unit,
     onOpenCoffee: (String) -> Unit
 ) {
-    val searchText = remember { mutableStateOf("") }
+    val searchText = remember {
+        mutableStateOf(initialQuery)
+    }
+
+    LaunchedEffect(initialQuery) {
+        if (initialQuery.isNotBlank() && searchText.value != initialQuery) {
+            searchText.value = initialQuery
+        }
+    }
 
     val searchResults = remember(
         searchText.value,
@@ -64,6 +73,7 @@ fun SearchScreen(
             CafeAnalytics.logEvent(
                 eventName = AnalyticsEvents.SEARCH_COFFEE,
                 params = mapOf(
+                    "source" to "search_screen",
                     "search_length" to term.length,
                     "result_count" to searchResults.size,
                     "has_result" to searchResults.isNotEmpty()
@@ -302,14 +312,10 @@ private fun scoreField(
         return 85
     }
 
-    // Para termos pequenos, não usamos "contains".
-    // Isso evita que "Mel" encontre "Vermelho".
     if (term.length >= 4 && field.contains(term)) {
         return 45
     }
 
-    // Tolerância a pequeno erro de digitação.
-    // Ex.: "Mell" encontra "Melitta".
     if (term.length >= 4) {
         val fuzzyScore = words.maxOfOrNull { word ->
             scoreFuzzyPrefix(

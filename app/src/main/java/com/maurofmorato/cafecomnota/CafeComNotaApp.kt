@@ -51,6 +51,10 @@ fun CafeComNotaApp() {
             mutableStateOf(AppLanguage.Portuguese.name)
         }
 
+        var initialSearchQuery by rememberSaveable {
+            mutableStateOf("")
+        }
+
         var coffeesForUi by remember {
             mutableStateOf(sampleCoffees())
         }
@@ -116,6 +120,26 @@ fun CafeComNotaApp() {
             )
         }
 
+        fun searchFromHome(query: String) {
+            val cleanedQuery = query.trim()
+
+            initialSearchQuery = cleanedQuery
+
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.SEARCH_COFFEE,
+                params = mapOf(
+                    "source" to "home",
+                    "search_length" to cleanedQuery.length,
+                    "has_query" to cleanedQuery.isNotBlank()
+                )
+            )
+
+            navigateTo(
+                newDestination = AppDestination.Search,
+                source = "home_search"
+            )
+        }
+
         LaunchedEffect(Unit) {
             val result = coffeeRepository.loadCoffees()
 
@@ -167,9 +191,13 @@ fun CafeComNotaApp() {
                         CafeBottomBar(
                             currentDestination = destination,
                             strings = strings,
-                            onNavigate = {
+                            onNavigate = { nextDestination ->
+                                if (nextDestination == AppDestination.Search) {
+                                    initialSearchQuery = ""
+                                }
+
                                 navigateTo(
-                                    newDestination = it,
+                                    newDestination = nextDestination,
                                     source = "bottom_bar"
                                 )
                             }
@@ -189,6 +217,7 @@ fun CafeComNotaApp() {
                                 source = "home"
                             )
                         },
+                        onSearch = ::searchFromHome,
                         onOpenCoffee = ::openCoffeeDetail
                     )
 
@@ -196,6 +225,7 @@ fun CafeComNotaApp() {
                         innerPadding = innerPadding,
                         strings = strings,
                         coffees = coffeesForUi,
+                        initialQuery = initialSearchQuery,
                         onNavigate = {
                             navigateTo(
                                 newDestination = it,

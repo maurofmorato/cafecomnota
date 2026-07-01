@@ -21,13 +21,43 @@ data class CoffeeUiModel(
     val valueRating: Double,
     val price250g: Double = if (priceKg > 0.0) priceKg / 4.0 else 0.0,
     val lastPriceDate: String? = null,
-    val totalPriceRecords: Int = 0
+    val totalPriceRecords: Int = 0,
+    val productLabel: String? = null,
+    val producer: String? = null,
+    val originRegion: String? = null,
+    val altitudeMeters: Int? = null,
+    val variety: String? = null,
+    val process: String? = null,
+    val scaScoreText: String? = null,
+    val bodyDescription: String? = null,
+    val aromaFlavor: String? = null,
+    val acidityDescription: String? = null,
+    val certification: String? = null,
+    val dataSourceLabel: String? = null
 ) {
     val hasRating: Boolean
         get() = rating > 0.0 && totalReviews > 0
 
     val hasPrice: Boolean
         get() = priceKg > 0.0
+
+    val hasTechnicalSheet: Boolean
+        get() = listOf(
+            productLabel,
+            producer,
+            originRegion,
+            altitudeMeters?.toString(),
+            variety,
+            process,
+            scaScoreText,
+            bodyDescription,
+            aromaFlavor,
+            acidityDescription,
+            certification,
+            dataSourceLabel
+        ).any { value ->
+            !value.isNullOrBlank()
+        }
 }
 
 fun sampleCoffees(): List<CoffeeUiModel> {
@@ -43,12 +73,7 @@ fun sampleCoffees(): List<CoffeeUiModel> {
             priceKg = 68.90,
             wouldBuyAgainPercent = 94,
             description = "Café equilibrado, com aroma marcante, baixa acidez e bom desempenho no coado.",
-            tags = listOf(
-                "Chocolate",
-                "Baixa acidez",
-                "Coado",
-                "Custo-benefício"
-            ),
+            tags = listOf("Chocolate", "Baixa acidez", "Coado", "Custo-benefício"),
             aroma = 4.7,
             flavor = 4.8,
             body = 4.5,
@@ -59,89 +84,37 @@ fun sampleCoffees(): List<CoffeeUiModel> {
             lastPriceDate = "2026-06-01",
             totalPriceRecords = 4
         ),
-
         CoffeeUiModel(
             id = "2",
-            name = "Sul de Minas Gourmet",
-            brand = "Café Boa Prosa",
-            type = "Grãos",
-            roast = "Média clara",
-            rating = 4.6,
-            totalReviews = 87,
-            priceKg = 82.50,
-            wouldBuyAgainPercent = 89,
-            description = "Boa opção para quem gosta de café aromático, levemente adocicado e com finalização limpa.",
-            tags = listOf(
-                "Aromático",
-                "Adocicado",
-                "Grãos",
-                "Especial"
-            ),
-            aroma = 4.8,
-            flavor = 4.5,
-            body = 4.1,
-            acidity = 3.8,
-            bitterness = 2.3,
-            sweetness = 4.4,
-            valueRating = 4.0,
-            lastPriceDate = "2026-05-20",
-            totalPriceRecords = 2
-        ),
-
-        CoffeeUiModel(
-            id = "3",
-            name = "Tradicional Forte",
-            brand = "Mercado Bom",
-            type = "Moído",
-            roast = "Escura",
-            rating = 3.7,
-            totalReviews = 211,
-            priceKg = 39.80,
-            wouldBuyAgainPercent = 68,
-            description = "Café popular, forte, de preço baixo, mas com amargor mais presente.",
-            tags = listOf(
-                "Forte",
-                "Mercado",
-                "Barato",
-                "Amargor alto"
-            ),
-            aroma = 3.4,
-            flavor = 3.5,
-            body = 4.0,
-            acidity = 2.6,
-            bitterness = 4.2,
-            sweetness = 2.4,
-            valueRating = 4.2,
-            lastPriceDate = "2026-06-10",
-            totalPriceRecords = 6
-        ),
-
-        CoffeeUiModel(
-            id = "4",
-            name = "Orgânico Mantiqueira",
-            brand = "Raiz Café",
+            name = "Black Tucano Honey Coffee",
+            brand = "Black Tucano Coffee Roasters",
             type = "Grãos",
             roast = "Média",
-            rating = 4.9,
-            totalReviews = 46,
-            priceKg = 118.00,
-            wouldBuyAgainPercent = 96,
-            description = "Café de perfil especial, com notas doces, corpo agradável e preço mais alto.",
-            tags = listOf(
-                "Orgânico",
-                "Especial",
-                "Doce",
-                "Premium"
-            ),
-            aroma = 4.9,
-            flavor = 4.9,
-            body = 4.7,
-            acidity = 3.9,
-            bitterness = 2.0,
-            sweetness = 4.8,
-            valueRating = 3.8,
-            lastPriceDate = "2026-04-15",
-            totalPriceRecords = 3
+            rating = 0.0,
+            totalReviews = 0,
+            priceKg = 0.0,
+            wouldBuyAgainPercent = 0,
+            description = "Café de catálogo especial, aguardando avaliações dos usuários.",
+            tags = listOf("Grãos", "Média", "Especial", "SCA"),
+            aroma = 0.0,
+            flavor = 0.0,
+            body = 0.0,
+            acidity = 0.0,
+            bitterness = 0.0,
+            sweetness = 0.0,
+            valueRating = 0.0,
+            productLabel = "Café Black Tucano Honey Coffee Torrado e em Grãos 250g",
+            producer = "Waldir Manske",
+            originRegion = "Sítio Alto Santa Joana – Afonso Cláudio, Espírito Santo",
+            altitudeMeters = 1100,
+            variety = "Caturra Amarelo",
+            process = "Honey Coffee",
+            scaScoreText = "Acima de 86 pontos",
+            bodyDescription = "Aveludado",
+            aromaFlavor = "Melaço de cana, mel e framboesa",
+            acidityDescription = "Média e arredondada",
+            certification = "SCA",
+            dataSourceLabel = "Embalagem"
         )
     )
 }

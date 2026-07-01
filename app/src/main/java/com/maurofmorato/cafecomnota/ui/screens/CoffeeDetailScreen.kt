@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Star
@@ -152,6 +153,16 @@ fun CoffeeDetailScreen(
                 color = CoffeeMuted,
                 fontSize = 13.sp
             )
+        }
+
+        if (coffee.hasTechnicalSheet) {
+            Spacer(modifier = Modifier.height(22.dp))
+
+            SectionTitle(title = "Ficha técnica")
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            TechnicalSheetCard(coffee = coffee)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -383,6 +394,66 @@ private fun SummaryCard(
             )
         }
     }
+}
+
+@Composable
+private fun TechnicalSheetCard(
+    coffee: CoffeeUiModel
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CoffeeCard
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = CoffeeBrown
+            )
+
+            TechnicalLine("Produto", coffee.productLabel)
+            TechnicalLine("Marca", coffee.brand)
+            TechnicalLine("Produtor", coffee.producer)
+            TechnicalLine("Origem", coffee.originRegion)
+            TechnicalLine("Altitude", coffee.altitudeMeters?.let { "$it m" })
+            TechnicalLine("Variedade", coffee.variety)
+            TechnicalLine("Tipo de Café", coffee.type)
+            TechnicalLine("Processo", coffee.process)
+            TechnicalLine("Pontuação SCA", coffee.scaScoreText)
+            TechnicalLine("Corpo", coffee.bodyDescription)
+            TechnicalLine("Aroma e Sabor", coffee.aromaFlavor)
+            TechnicalLine("Acidez", coffee.acidityDescription)
+            TechnicalLine("Certificação/Fonte", coffee.certification)
+            TechnicalLine("Fonte do cadastro", coffee.dataSourceLabel)
+        }
+    }
+}
+
+@Composable
+private fun TechnicalLine(
+    label: String,
+    value: String?
+) {
+    if (value.isNullOrBlank()) {
+        return
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Text(
+        text = "$label: $value",
+        color = CoffeeText,
+        fontSize = 14.sp,
+        lineHeight = 19.sp
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
