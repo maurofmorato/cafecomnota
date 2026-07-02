@@ -41,19 +41,52 @@ import kotlinx.coroutines.launch
 fun CafeComNotaApp() {
     CafeComNotaTheme {
         val context = LocalContext.current
-        val coffeeRepository = remember { CoffeeRepository() }
-        val authRepository = remember { SupabaseAuthRepository(context) }
+
+        val coffeeRepository = remember {
+            CoffeeRepository()
+        }
+
+        val authRepository = remember {
+            SupabaseAuthRepository(context)
+        }
+
         val coroutineScope = rememberCoroutineScope()
 
-        var currentDestination by rememberSaveable { mutableStateOf(AppDestination.Home.name) }
-        var selectedCoffeeId by rememberSaveable { mutableStateOf(sampleCoffees().first().id) }
-        var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.Portuguese.name) }
-        var initialSearchQuery by rememberSaveable { mutableStateOf("") }
-        var coffeesForUi by remember { mutableStateOf(sampleCoffees()) }
-        var coffeeDataSource by remember { mutableStateOf(CoffeeDataSource.LocalFallback) }
-        var authSession by remember { mutableStateOf<AuthSession?>(null) }
-        var isLoggingIn by remember { mutableStateOf(false) }
-        var loginMessage by remember { mutableStateOf("") }
+        var currentDestination by rememberSaveable {
+            mutableStateOf(AppDestination.Home.name)
+        }
+
+        var selectedCoffeeId by rememberSaveable {
+            mutableStateOf(sampleCoffees().first().id)
+        }
+
+        var currentLanguageName by rememberSaveable {
+            mutableStateOf(AppLanguage.Portuguese.name)
+        }
+
+        var initialSearchQuery by rememberSaveable {
+            mutableStateOf("")
+        }
+
+        var coffeesForUi by remember {
+            mutableStateOf(sampleCoffees())
+        }
+
+        var coffeeDataSource by remember {
+            mutableStateOf(CoffeeDataSource.LocalFallback)
+        }
+
+        var authSession by remember {
+            mutableStateOf<AuthSession?>(null)
+        }
+
+        var isLoggingIn by remember {
+            mutableStateOf(false)
+        }
+
+        var loginMessage by remember {
+            mutableStateOf("")
+        }
 
         val currentLanguage = AppLanguage.valueOf(currentLanguageName)
         val strings = stringsFor(currentLanguage)
@@ -62,9 +95,45 @@ fun CafeComNotaApp() {
         val selectedCoffee = findCoffeeById(
             id = selectedCoffeeId,
             coffees = coffeesForUi
-        ) ?: coffeesForUi.firstOrNull() ?: sampleCoffees().first()
+        ) ?: coffeesForUi.firstOrNull()
+            ?: sampleCoffees().first()
 
-        fun navigateTo(newDestination: AppDestination, source: String = "app") {
+        fun reloadCoffees(
+            source: String
+        ) {
+            coroutineScope.launch {
+                val result = coffeeRepository.loadCoffees()
+
+                coffeesForUi = ensureSafeCoffeeList(result.coffees)
+                coffeeDataSource = result.source
+
+                CafeAnalytics.logEvent(
+                    eventName = "reload_coffees",
+                    params = mapOf(
+                        "source" to source,
+                        "data_source" to result.source.name,
+                        "count" to result.coffees.size,
+                        "has_error" to (result.error != null)
+                    )
+                )
+
+                result.error?.let { error ->
+                    CafeAnalytics.recordNonFatal(
+                        throwable = error,
+                        params = mapOf(
+                            "screen" to "app",
+                            "action" to "reload_coffees",
+                            "source" to source
+                        )
+                    )
+                }
+            }
+        }
+
+        fun navigateTo(
+            newDestination: AppDestination,
+            source: String = "app"
+        ) {
             CafeAnalytics.logEvent(
                 eventName = AnalyticsEvents.NAVIGATE,
                 params = mapOf(
@@ -76,11 +145,13 @@ fun CafeComNotaApp() {
                     "logged_in" to (authSession != null)
                 )
             )
+
             currentDestination = newDestination.name
         }
 
         fun openCoffeeDetail(coffeeId: String) {
             selectedCoffeeId = coffeeId
+
             CafeAnalytics.logEvent(
                 eventName = AnalyticsEvents.VIEW_COFFEE_DETAIL,
                 params = mapOf(
@@ -90,11 +161,13 @@ fun CafeComNotaApp() {
                     "data_source" to coffeeDataSource.name
                 )
             )
+
             currentDestination = AppDestination.CoffeeDetail.name
         }
 
         fun changeLanguage(language: AppLanguage) {
             currentLanguageName = language.name
+
             CafeAnalytics.logEvent(
                 eventName = AnalyticsEvents.CHANGE_LANGUAGE,
                 params = mapOf(
@@ -107,6 +180,7 @@ fun CafeComNotaApp() {
         fun searchFromHome(query: String) {
             val cleanedQuery = query.trim()
             initialSearchQuery = cleanedQuery
+
             CafeAnalytics.logEvent(
                 eventName = AnalyticsEvents.SEARCH_COFFEE,
                 params = mapOf(
@@ -115,23 +189,41 @@ fun CafeComNotaApp() {
                     "has_query" to cleanedQuery.isNotBlank()
                 )
             )
-            navigateTo(AppDestination.Search, "home_search")
+
+            navigateTo(
+                newDestination = AppDestination.Search,
+                source = "home_search"
+            )
         }
 
-        fun doLogin(email: String, password: String) {
-            if (isLoggingIn) return
+        fun doLogin(
+            email: String,
+            password: String
+        ) {
+            if (isLoggingIn) {
+                return
+            }
+
             val cleanedEmail = email.trim()
+
             if (cleanedEmail.isBlank() || password.isBlank()) {
                 loginMessage = "Informe email e senha."
                 return
             }
+
             isLoggingIn = true
             loginMessage = "Entrando..."
+
             coroutineScope.launch {
                 try {
-                    val session = authRepository.loginWithEmailPassword(cleanedEmail, password)
+                    val session = authRepository.loginWithEmailPassword(
+                        email = cleanedEmail,
+                        password = password
+                    )
+
                     authSession = session
                     CafeAnalytics.setUserId(session.userId)
+
                     CafeAnalytics.logEvent(
                         eventName = "login_success",
                         params = mapOf(
@@ -139,12 +231,17 @@ fun CafeComNotaApp() {
                             "email_domain" to session.email.substringAfter("@", "")
                         )
                     )
+
                     loginMessage = "Login realizado com sucesso."
                 } catch (throwable: Throwable) {
                     CafeAnalytics.recordNonFatal(
                         throwable = throwable,
-                        params = mapOf("screen" to "profile", "action" to "login")
+                        params = mapOf(
+                            "screen" to "profile",
+                            "action" to "login"
+                        )
                     )
+
                     CafeAnalytics.logEvent(
                         eventName = "login_error",
                         params = mapOf(
@@ -152,6 +249,7 @@ fun CafeComNotaApp() {
                             "message" to (throwable.message ?: "erro")
                         )
                     )
+
                     loginMessage = throwable.message ?: "Não foi possível fazer login."
                 } finally {
                     isLoggingIn = false
@@ -163,21 +261,35 @@ fun CafeComNotaApp() {
             authRepository.logout()
             authSession = null
             loginMessage = "Você saiu da conta."
+
             CafeAnalytics.setUserId(null)
-            CafeAnalytics.logEvent("logout", mapOf("source" to "profile"))
+            CafeAnalytics.logEvent(
+                eventName = "logout",
+                params = mapOf(
+                    "source" to "profile"
+                )
+            )
+        }
+
+        fun afterReviewSaved() {
+            currentDestination = AppDestination.CoffeeDetail.name
+            reloadCoffees(source = "review_saved")
         }
 
         LaunchedEffect(Unit) {
             val savedSession = authRepository.getSavedSession()
             authSession = savedSession
+
             savedSession?.let { session ->
                 CafeAnalytics.setUserId(session.userId)
                 loginMessage = "Sessão restaurada."
             }
 
             val result = coffeeRepository.loadCoffees()
+
             coffeesForUi = ensureSafeCoffeeList(result.coffees)
             coffeeDataSource = result.source
+
             CafeAnalytics.logEvent(
                 eventName = AnalyticsEvents.LOAD_COFFEES,
                 params = mapOf(
@@ -186,11 +298,15 @@ fun CafeComNotaApp() {
                     "has_error" to (result.error != null)
                 )
             )
+
             if (result.source == CoffeeDataSource.LocalFallback) {
                 CafeAnalytics.logEvent(
                     eventName = AnalyticsEvents.LOAD_COFFEES_FALLBACK,
-                    params = mapOf("reason" to (result.error?.message ?: "empty_result"))
+                    params = mapOf(
+                        "reason" to (result.error?.message ?: "empty_result")
+                    )
                 )
+
                 result.error?.let { error ->
                     CafeAnalytics.recordNonFatal(
                         throwable = error,
@@ -208,7 +324,10 @@ fun CafeComNotaApp() {
             CafeAnalytics.logScreen("${destination.analyticsName}_${currentLanguage.code}")
         }
 
-        Surface(modifier = Modifier.fillMaxSize(), color = CoffeeCream) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = CoffeeCream
+        ) {
             Scaffold(
                 containerColor = CoffeeCream,
                 bottomBar = {
@@ -220,7 +339,11 @@ fun CafeComNotaApp() {
                                 if (nextDestination == AppDestination.Search) {
                                     initialSearchQuery = ""
                                 }
-                                navigateTo(nextDestination, "bottom_bar")
+
+                                navigateTo(
+                                    newDestination = nextDestination,
+                                    source = "bottom_bar"
+                                )
                             }
                         )
                     }
@@ -232,25 +355,43 @@ fun CafeComNotaApp() {
                         strings = strings,
                         coffees = coffeesForUi,
                         dataSource = coffeeDataSource,
-                        onNavigate = { navigateTo(it, "home") },
+                        onNavigate = {
+                            navigateTo(
+                                newDestination = it,
+                                source = "home"
+                            )
+                        },
                         onSearch = ::searchFromHome,
                         onOpenCoffee = ::openCoffeeDetail
                     )
+
                     AppDestination.Search -> SearchScreen(
                         innerPadding = innerPadding,
                         strings = strings,
                         coffees = coffeesForUi,
                         initialQuery = initialSearchQuery,
-                        onNavigate = { navigateTo(it, "search") },
+                        onNavigate = {
+                            navigateTo(
+                                newDestination = it,
+                                source = "search"
+                            )
+                        },
                         onOpenCoffee = ::openCoffeeDetail
                     )
+
                     AppDestination.Ranking -> RankingScreen(
                         innerPadding = innerPadding,
                         strings = strings,
                         coffees = coffeesForUi,
-                        onNavigate = { navigateTo(it, "ranking") },
+                        onNavigate = {
+                            navigateTo(
+                                newDestination = it,
+                                source = "ranking"
+                            )
+                        },
                         onOpenCoffee = ::openCoffeeDetail
                     )
+
                     AppDestination.Profile -> ProfileScreen(
                         innerPadding = innerPadding,
                         strings = strings,
@@ -261,13 +402,24 @@ fun CafeComNotaApp() {
                         onLanguageChange = ::changeLanguage,
                         onLogin = ::doLogin,
                         onLogout = ::doLogout,
-                        onNavigate = { navigateTo(it, "profile") }
+                        onNavigate = {
+                            navigateTo(
+                                newDestination = it,
+                                source = "profile"
+                            )
+                        }
                     )
+
                     AppDestination.CoffeeDetail -> CoffeeDetailScreen(
                         innerPadding = innerPadding,
                         strings = strings,
                         coffee = selectedCoffee,
-                        onBack = { navigateTo(AppDestination.Home, "coffee_detail_back") },
+                        onBack = {
+                            navigateTo(
+                                newDestination = AppDestination.Home,
+                                source = "coffee_detail_back"
+                            )
+                        },
                         onReview = {
                             CafeAnalytics.logEvent(
                                 eventName = AnalyticsEvents.START_REVIEW,
@@ -279,21 +431,38 @@ fun CafeComNotaApp() {
                                     "logged_in" to (authSession != null)
                                 )
                             )
-                            navigateTo(AppDestination.ReviewCoffee, "coffee_detail")
+
+                            navigateTo(
+                                newDestination = AppDestination.ReviewCoffee,
+                                source = "coffee_detail"
+                            )
                         }
                     )
+
                     AppDestination.ReviewCoffee -> ReviewCoffeeScreen(
                         innerPadding = innerPadding,
                         strings = strings,
                         coffeeId = selectedCoffee.id,
                         coffeeName = selectedCoffee.name,
                         authSession = authSession,
-                        onBack = { navigateTo(AppDestination.CoffeeDetail, "review_back") }
+                        onBack = {
+                            navigateTo(
+                                newDestination = AppDestination.CoffeeDetail,
+                                source = "review_back"
+                            )
+                        },
+                        onSaved = ::afterReviewSaved
                     )
+
                     AppDestination.AddCoffee -> AddCoffeeScreen(
                         innerPadding = innerPadding,
                         strings = strings,
-                        onBack = { navigateTo(AppDestination.Home, "add_coffee_back") }
+                        onBack = {
+                            navigateTo(
+                                newDestination = AppDestination.Home,
+                                source = "add_coffee_back"
+                            )
+                        }
                     )
                 }
             }
@@ -301,6 +470,10 @@ fun CafeComNotaApp() {
     }
 }
 
-private fun ensureSafeCoffeeList(coffees: List<CoffeeUiModel>): List<CoffeeUiModel> {
-    return coffees.ifEmpty { sampleCoffees() }
+private fun ensureSafeCoffeeList(
+    coffees: List<CoffeeUiModel>
+): List<CoffeeUiModel> {
+    return coffees.ifEmpty {
+        sampleCoffees()
+    }
 }
