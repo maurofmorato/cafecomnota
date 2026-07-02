@@ -56,11 +56,7 @@ fun AddCoffeeScreen(
 
     CafeResponsiveContent(innerPadding = innerPadding) {
         IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = strings.commonBack,
-                tint = CoffeeBrown
-            )
+            Icon(Icons.Default.ArrowBack, contentDescription = strings.commonBack, tint = CoffeeBrown)
         }
 
         CafeHeader(strings = strings, compact = true)
@@ -76,7 +72,8 @@ fun AddCoffeeScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
-                Icon(imageVector = Icons.Default.LocalCafe, contentDescription = null, tint = CoffeeBrown)
+                Icon(Icons.Default.LocalCafe, contentDescription = null, tint = CoffeeBrown)
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
@@ -89,7 +86,7 @@ fun AddCoffeeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Acentos são preservados no nome exibido. Ex.: Café moído. A versão sem acento fica apenas para busca interna.",
+                    text = "O nome exibido preserva acentos. A versão sem acento fica apenas para busca interna.",
                     color = CoffeeMuted,
                     fontSize = 14.sp
                 )
@@ -128,26 +125,46 @@ fun AddCoffeeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(text = "Tipo", color = CoffeeBrownDark, fontWeight = FontWeight.SemiBold)
+                Text("Tipo", color = CoffeeBrownDark, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 androidx.compose.foundation.layout.Row {
-                    FilterChip(selected = type.value == "moido", onClick = { type.value = "moido" }, label = { Text("Moído") })
+                    FilterChip(
+                        selected = type.value == "moido",
+                        onClick = { type.value = "moido" },
+                        label = { Text("Moído") }
+                    )
                     Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                    FilterChip(selected = type.value == "grao", onClick = { type.value = "grao" }, label = { Text("Grãos") })
+                    FilterChip(
+                        selected = type.value == "grao",
+                        onClick = { type.value = "grao" },
+                        label = { Text("Grãos") }
+                    )
                     Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                    FilterChip(selected = type.value == "capsula", onClick = { type.value = "capsula" }, label = { Text("Cápsula") })
+                    FilterChip(
+                        selected = type.value == "capsula",
+                        onClick = { type.value = "capsula" },
+                        label = { Text("Cápsula") }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(text = "Torra", color = CoffeeBrownDark, fontWeight = FontWeight.SemiBold)
+                Text("Torra", color = CoffeeBrownDark, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 androidx.compose.foundation.layout.Row {
-                    FilterChip(selected = roast.value == "media", onClick = { roast.value = "media" }, label = { Text("Média") })
+                    FilterChip(
+                        selected = roast.value == "media",
+                        onClick = { roast.value = "media" },
+                        label = { Text("Média") }
+                    )
                     Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                    FilterChip(selected = roast.value == "escura", onClick = { roast.value = "escura" }, label = { Text("Escura") })
+                    FilterChip(
+                        selected = roast.value == "escura",
+                        onClick = { roast.value = "escura" },
+                        label = { Text("Escura") }
+                    )
                 }
             }
         }
@@ -161,7 +178,8 @@ fun AddCoffeeScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
-                Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = CoffeeBrown)
+                Icon(Icons.Default.Info, contentDescription = null, tint = CoffeeBrown)
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
@@ -217,11 +235,11 @@ fun AddCoffeeScreen(
                     )
                 )
 
-                message.value = "Cadastro preservado na tela. Na próxima etapa vamos salvar este café no Supabase mantendo os acentos."
+                message.value = "Cadastro preservado na tela. Na próxima etapa vamos salvar no Supabase mantendo os acentos."
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(imageVector = Icons.Default.Save, contentDescription = null)
+            Icon(Icons.Default.Save, contentDescription = null)
             Text(text = "Salvar café", modifier = Modifier.padding(start = 8.dp))
         }
 

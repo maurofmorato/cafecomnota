@@ -35,7 +35,7 @@ class SupabaseReviewRepository {
         request: ReviewSaveRequest
     ) {
         val endpoint =
-            "${SupabaseConfig.BASE_URL}/rest/v1/avaliacoes?on_conflict=${encode("cafe_id,usuario_id")}" 
+            "${SupabaseConfig.BASE_URL}/rest/v1/avaliacoes?on_conflict=${encode("cafe_id,usuario_id")}"
 
         val body = JSONObject()
             .put("cafe_id", request.cafeId)
@@ -67,7 +67,7 @@ class SupabaseReviewRepository {
         request: ReviewSaveRequest
     ) {
         val endpoint =
-            "${SupabaseConfig.BASE_URL}/rest/v1/precos_cafe?on_conflict=${encode("cafe_id,usuario_id")}" 
+            "${SupabaseConfig.BASE_URL}/rest/v1/precos_cafe?on_conflict=${encode("cafe_id,usuario_id")}"
 
         val body = JSONObject()
             .put("cafe_id", request.cafeId)
@@ -76,6 +76,7 @@ class SupabaseReviewRepository {
             .put("peso_g", request.weightGrams)
             .put("data_preco", todayIsoDate())
             .put("origem_preco", "usuario")
+            .put("moeda", "BRL")
 
         executePost(
             endpoint = endpoint,
@@ -97,6 +98,7 @@ class SupabaseReviewRepository {
             .put("peso_g", request.weightGrams)
             .put("data_preco", todayIsoDate())
             .put("origem_preco", "usuario")
+            .put("moeda", "BRL")
 
         executePost(
             endpoint = endpoint,
@@ -145,29 +147,40 @@ class SupabaseReviewRepository {
         }
     }
 
-    private fun parseErrorMessage(responseBody: String): String {
+    private fun parseErrorMessage(
+        responseBody: String
+    ): String {
         if (responseBody.isBlank()) {
             return "Não foi possível salvar no Supabase."
         }
 
         return try {
             val json = JSONObject(responseBody)
+
             val message = json.optString("message")
                 .ifBlank { json.optString("msg") }
                 .ifBlank { json.optString("hint") }
                 .ifBlank { json.optString("details") }
 
-            message.ifBlank { "Não foi possível salvar no Supabase." }
+            message.ifBlank {
+                "Não foi possível salvar no Supabase."
+            }
         } catch (_: Exception) {
             "Não foi possível salvar no Supabase."
         }
     }
 
     private fun encode(value: String): String {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8.toString())
+        return URLEncoder.encode(
+            value,
+            StandardCharsets.UTF_8.toString()
+        )
     }
 
     private fun todayIsoDate(): String {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        return SimpleDateFormat(
+            "yyyy-MM-dd",
+            Locale.US
+        ).format(Date())
     }
 }

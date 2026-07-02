@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,71 +67,30 @@ fun ReviewCoffeeScreen(
     onSaved: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val reviewRepository = remember {
-        SupabaseReviewRepository()
-    }
+    val reviewRepository = remember { SupabaseReviewRepository() }
 
-    var rating by remember {
-        mutableFloatStateOf(4.0f)
-    }
-
-    var wouldBuyAgain by remember {
-        mutableStateOf(true)
-    }
-
-    var priceText by remember {
-        mutableStateOf("")
-    }
-
-    var weightText by remember {
-        mutableStateOf("250")
-    }
-
-    var brewMethod by remember {
-        mutableStateOf("nao_informado")
-    }
-
-    var comment by remember {
-        mutableStateOf("")
-    }
-
-    var isSaving by remember {
-        mutableStateOf(false)
-    }
-
-    var message by remember {
-        mutableStateOf("")
-    }
+    var rating by remember { mutableFloatStateOf(4.0f) }
+    var wouldBuyAgain by remember { mutableStateOf(true) }
+    var priceText by remember { mutableStateOf("") }
+    var weightText by remember { mutableStateOf("250") }
+    var brewMethod by remember { mutableStateOf("nao_informado") }
+    var comment by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf("") }
 
     val pricePaid = parseDecimal(priceText)
     val weightGrams = parseDecimal(weightText)
-    val pricePerKg = calculatePricePerKg(
-        pricePaid = pricePaid,
-        weightGrams = weightGrams
-    )
+    val pricePerKg = calculatePricePerKg(pricePaid, weightGrams)
 
-    CafeResponsiveContent(
-        innerPadding = innerPadding
-    ) {
-        IconButton(
-            onClick = onBack
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = strings.commonBack,
-                tint = CoffeeBrown
-            )
+    CafeResponsiveContent(innerPadding = innerPadding) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.Default.ArrowBack, contentDescription = strings.commonBack, tint = CoffeeBrown)
         }
 
-        CafeHeader(
-            strings = strings,
-            compact = true
-        )
+        CafeHeader(strings = strings, compact = true)
 
         Spacer(modifier = Modifier.height(22.dp))
-
         SectionTitle(title = "Dar nota")
-
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
@@ -150,16 +110,10 @@ fun ReviewCoffeeScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = CoffeeCard
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
+            colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            androidx.compose.foundation.layout.Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Nota geral: ${formatRating(rating.toDouble())}",
                     color = CoffeeBrownDark,
@@ -169,9 +123,7 @@ fun ReviewCoffeeScreen(
 
                 Slider(
                     value = rating,
-                    onValueChange = {
-                        rating = it
-                    },
+                    onValueChange = { rating = it },
                     valueRange = 1f..5f,
                     steps = 7
                 )
@@ -187,27 +139,17 @@ fun ReviewCoffeeScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = wouldBuyAgain,
-                        onClick = {
-                            wouldBuyAgain = true
-                        },
-                        label = {
-                            Text("Sim")
-                        }
+                        onClick = { wouldBuyAgain = true },
+                        label = { Text("Sim") }
                     )
 
                     FilterChip(
                         selected = !wouldBuyAgain,
-                        onClick = {
-                            wouldBuyAgain = false
-                        },
-                        label = {
-                            Text("Não")
-                        }
+                        onClick = { wouldBuyAgain = false },
+                        label = { Text("Não") }
                     )
                 }
             }
@@ -218,25 +160,12 @@ fun ReviewCoffeeScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = CoffeeCard
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
+            colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            androidx.compose.foundation.layout.Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Calculate,
-                        contentDescription = null,
-                        tint = CoffeeBrown
-                    )
-
+            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.Calculate, contentDescription = null, tint = CoffeeBrown)
                     Text(
                         text = "Preço pago",
                         color = CoffeeBrownDark,
@@ -248,7 +177,7 @@ fun ReviewCoffeeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Informe o preço da embalagem e o peso. O app calcula o preço por kg e o equivalente por 250g.",
+                    text = "Moeda atual: BRL. Informe o preço da embalagem e o peso. O app calcula o preço por kg e o equivalente por 250g.",
                     color = CoffeeMuted,
                     fontSize = 14.sp
                 )
@@ -257,16 +186,18 @@ fun ReviewCoffeeScreen(
 
                 OutlinedTextField(
                     value = priceText,
-                    onValueChange = {
-                        priceText = it
+                    onValueChange = { typed ->
+                        priceText = sanitizePriceInput(typed)
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Preço pago")
-                    },
-                    placeholder = {
-                        Text("Ex.: 18,90 ou 18.90")
-                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (!focusState.isFocused) {
+                                priceText = formatDecimalForInput(priceText)
+                            }
+                        },
+                    label = { Text("Preço pago (BRL)") },
+                    placeholder = { Text("Ex.: 20,00") },
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = CoffeeGold,
@@ -279,16 +210,10 @@ fun ReviewCoffeeScreen(
 
                 OutlinedTextField(
                     value = weightText,
-                    onValueChange = {
-                        weightText = it
-                    },
+                    onValueChange = { weightText = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Peso em gramas")
-                    },
-                    placeholder = {
-                        Text("Ex.: 250, 500 ou 1000")
-                    },
+                    label = { Text("Peso em gramas") },
+                    placeholder = { Text("Ex.: 250, 500 ou 1000") },
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = CoffeeGold,
@@ -299,9 +224,7 @@ fun ReviewCoffeeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                PricePreview(
-                    pricePerKg = pricePerKg
-                )
+                PricePreview(pricePerKg = pricePerKg)
             }
         }
 
@@ -310,16 +233,10 @@ fun ReviewCoffeeScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = CoffeeCard
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
+            colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            androidx.compose.foundation.layout.Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Preparo e comentário",
                     color = CoffeeBrownDark,
@@ -329,31 +246,23 @@ fun ReviewCoffeeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PreparationChip(
                         selected = brewMethod == "nao_informado",
                         text = "Não informar",
-                        onClick = {
-                            brewMethod = "nao_informado"
-                        }
+                        onClick = { brewMethod = "nao_informado" }
                     )
 
                     PreparationChip(
                         selected = brewMethod == "coado",
                         text = "Coado",
-                        onClick = {
-                            brewMethod = "coado"
-                        }
+                        onClick = { brewMethod = "coado" }
                     )
 
                     PreparationChip(
                         selected = brewMethod == "espresso",
                         text = "Espresso",
-                        onClick = {
-                            brewMethod = "espresso"
-                        }
+                        onClick = { brewMethod = "espresso" }
                     )
                 }
 
@@ -361,16 +270,10 @@ fun ReviewCoffeeScreen(
 
                 OutlinedTextField(
                     value = comment,
-                    onValueChange = {
-                        comment = it
-                    },
+                    onValueChange = { comment = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Comentário")
-                    },
-                    placeholder = {
-                        Text("Ex.: café aromático, corpo bom, acidez equilibrada...")
-                    },
+                    label = { Text("Comentário") },
+                    placeholder = { Text("Ex.: café aromático, corpo bom, acidez equilibrada...") },
                     minLines = 3,
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = CoffeeGold,
@@ -390,9 +293,7 @@ fun ReviewCoffeeScreen(
                     return@Button
                 }
 
-                if (isSaving) {
-                    return@Button
-                }
+                if (isSaving) return@Button
 
                 val validationMessage = validateReview(
                     rating = rating.toDouble(),
@@ -417,7 +318,8 @@ fun ReviewCoffeeScreen(
                         "has_price" to (pricePaid != null && weightGrams != null),
                         "rating" to rating.toDouble(),
                         "price_paid" to pricePaid,
-                        "weight_grams" to weightGrams
+                        "weight_grams" to weightGrams,
+                        "currency" to "BRL"
                     )
                 )
 
@@ -444,7 +346,8 @@ fun ReviewCoffeeScreen(
                                 "has_price" to (pricePaid != null && weightGrams != null),
                                 "rating" to rating.toDouble(),
                                 "price_paid" to pricePaid,
-                                "weight_grams" to weightGrams
+                                "weight_grams" to weightGrams,
+                                "currency" to "BRL"
                             )
                         )
 
@@ -477,11 +380,7 @@ fun ReviewCoffeeScreen(
             enabled = !isSaving,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                imageVector = Icons.Default.Save,
-                contentDescription = null
-            )
-
+            Icon(Icons.Default.Save, contentDescription = null)
             Text(
                 text = if (isSaving) "Salvando..." else "Salvar avaliação",
                 modifier = Modifier.padding(start = 8.dp)
@@ -490,12 +389,7 @@ fun ReviewCoffeeScreen(
 
         if (message.isNotBlank()) {
             Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = message,
-                color = CoffeeBrown,
-                fontSize = 14.sp
-            )
+            Text(text = message, color = CoffeeBrown, fontSize = 14.sp)
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -507,22 +401,14 @@ private fun LoginRequiredCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CoffeeCard
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Security,
-                contentDescription = null,
-                tint = CoffeeBrown
-            )
+            Icon(Icons.Default.Security, contentDescription = null, tint = CoffeeBrown)
 
             androidx.compose.foundation.layout.Column {
                 Text(
@@ -548,13 +434,7 @@ private fun PreparationChip(
     text: String,
     onClick: () -> Unit
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
-            Text(text)
-        }
-    )
+    FilterChip(selected = selected, onClick = onClick, label = { Text(text) })
 }
 
 @Composable
@@ -590,17 +470,19 @@ private fun PricePreview(
     )
 }
 
-private fun parseDecimal(
-    value: String
-): Double? {
+private fun sanitizePriceInput(value: String): String {
+    return value.filter { char ->
+        char.isDigit() || char == ',' || char == '.'
+    }
+}
+
+private fun parseDecimal(value: String): Double? {
     val cleanedValue = value
         .trim()
         .replace("R$", "", ignoreCase = true)
         .replace(" ", "")
 
-    if (cleanedValue.isBlank()) {
-        return null
-    }
+    if (cleanedValue.isBlank()) return null
 
     val hasComma = cleanedValue.contains(",")
     val hasDot = cleanedValue.contains(".")
@@ -611,29 +493,28 @@ private fun parseDecimal(
             val lastDot = cleanedValue.lastIndexOf(".")
 
             if (lastComma > lastDot) {
-                cleanedValue
-                    .replace(".", "")
-                    .replace(",", ".")
+                cleanedValue.replace(".", "").replace(",", ".")
             } else {
-                cleanedValue
-                    .replace(",", "")
+                cleanedValue.replace(",", "")
             }
         }
 
-        hasComma -> {
-            cleanedValue.replace(",", ".")
-        }
-
-        hasDot -> {
-            cleanedValue
-        }
-
-        else -> {
-            cleanedValue
-        }
+        hasComma -> cleanedValue.replace(",", ".")
+        hasDot -> cleanedValue
+        else -> cleanedValue
     }
 
     return normalizedValue.toDoubleOrNull()
+}
+
+private fun formatDecimalForInput(value: String): String {
+    val parsedValue = parseDecimal(value) ?: return value.trim()
+
+    return String.format(
+        Locale("pt", "BR"),
+        "%.2f",
+        parsedValue
+    )
 }
 
 private fun calculatePricePerKg(
