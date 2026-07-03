@@ -39,7 +39,7 @@ fun CafeResponsiveContent(
         val horizontalPadding = when {
             maxWidth >= 900.dp -> 26.dp
             maxWidth >= 600.dp -> 22.dp
-            else -> 18.dp
+            else -> 14.dp
         }
 
         Box(
@@ -52,7 +52,7 @@ fun CafeResponsiveContent(
                     .widthIn(max = maxContentWidth)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = horizontalPadding)
-                    .padding(top = 12.dp, bottom = 18.dp),
+                    .padding(top = 8.dp, bottom = 96.dp),
                 horizontalAlignment = horizontalAlignment,
                 content = content
             )

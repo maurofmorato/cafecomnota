@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
@@ -61,42 +63,35 @@ fun RankingScreen(
             compact = true
         )
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         SectionTitle(title = strings.rankingTitle)
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            RankingFilter.values().forEach { filter ->
-                FilterChip(
-                    selected = selectedFilter.value == filter,
-                    onClick = {
-                        selectedFilter.value = filter
+        RankingFilterChips(
+            selectedFilter = selectedFilter.value,
+            strings = strings,
+            onSelected = { filter ->
+                selectedFilter.value = filter
 
-                        CafeAnalytics.logEvent(
-                            eventName = AnalyticsEvents.CHANGE_RANKING_FILTER,
-                            params = mapOf(
-                                "filter" to filter.analyticsValue
-                            )
-                        )
-                    },
-                    label = {
-                        Text(filterLabel(filter, strings))
-                    }
+                CafeAnalytics.logEvent(
+                    eventName = AnalyticsEvents.CHANGE_RANKING_FILTER,
+                    params = mapOf(
+                        "filter" to filter.analyticsValue
+                    )
                 )
             }
-        }
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         if (rankedCoffees.isEmpty()) {
             Text(
                 text = "O ranking aparecerá depois das primeiras avaliações. Os cafés do catálogo continuam disponíveis na busca.",
-                color = CoffeeMuted
+                color = CoffeeMuted,
+                fontSize = 13.sp,
+                lineHeight = 17.sp
             )
         } else {
             rankedCoffees.forEachIndexed { index, coffee ->
@@ -113,6 +108,71 @@ fun RankingScreen(
             }
         }
     }
+}
+
+@Composable
+private fun RankingFilterChips(
+    selectedFilter: RankingFilter,
+    strings: AppStrings,
+    onSelected: (RankingFilter) -> Unit
+) {
+    androidx.compose.foundation.layout.Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            RankingChip(
+                modifier = Modifier.weight(0.8f),
+                selected = selectedFilter == RankingFilter.Best,
+                text = filterLabel(RankingFilter.Best, strings),
+                onClick = {
+                    onSelected(RankingFilter.Best)
+                }
+            )
+
+            RankingChip(
+                modifier = Modifier.weight(1.2f),
+                selected = selectedFilter == RankingFilter.Value,
+                text = filterLabel(RankingFilter.Value, strings),
+                onClick = {
+                    onSelected(RankingFilter.Value)
+                }
+            )
+        }
+
+        RankingChip(
+            modifier = Modifier.fillMaxWidth(),
+            selected = selectedFilter == RankingFilter.Reviews,
+            text = filterLabel(RankingFilter.Reviews, strings),
+            onClick = {
+                onSelected(RankingFilter.Reviews)
+            }
+        )
+    }
+}
+
+@Composable
+private fun RankingChip(
+    modifier: Modifier,
+    selected: Boolean,
+    text: String,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        modifier = modifier,
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = text,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    )
 }
 
 private fun filterLabel(

@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
@@ -78,7 +79,7 @@ fun CafeBottomBar(
             .fillMaxWidth()
             .background(Color.White)
             .navigationBarsPadding()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 6.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -134,27 +135,28 @@ private fun BottomItem(
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .clickable {
                 onNavigate(destination)
             }
-            .padding(vertical = 6.dp),
+            .padding(vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = itemColor,
-            modifier = Modifier.size(25.dp)
+            modifier = Modifier.size(22.dp)
         )
 
         Text(
             text = label,
             color = itemColor,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -175,35 +177,38 @@ fun CafeHeader(
                 imageVector = Icons.Default.LocalCafe,
                 contentDescription = null,
                 tint = CoffeeBrown,
-                modifier = Modifier.size(if (compact) 34.dp else 44.dp)
+                modifier = Modifier.size(if (compact) 26.dp else 36.dp)
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(7.dp))
 
             Text(
                 text = strings.appName,
                 color = CoffeeBrownDark,
-                fontSize = if (compact) 28.sp else 34.sp,
+                fontSize = if (compact) 23.sp else 29.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Serif
+                fontFamily = FontFamily.Serif,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
         if (!compact) {
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.size(6.dp))
 
             HorizontalDivider(
-                modifier = Modifier.width(190.dp),
+                modifier = Modifier.width(170.dp),
                 color = CoffeeGold
             )
 
-            Spacer(modifier = Modifier.size(12.dp))
+            Spacer(modifier = Modifier.size(8.dp))
 
             Text(
                 text = strings.tagline,
                 color = CoffeeText.copy(alpha = 0.82f),
-                fontSize = 17.sp,
-                textAlign = TextAlign.Center
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
             )
         }
     }
@@ -222,23 +227,23 @@ fun MainActionCard(
             .clickable {
                 onClick()
             },
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = CoffeeCard
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 3.dp
+            defaultElevation = 2.dp
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 16.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(58.dp)
+                    .size(46.dp)
                     .clip(CircleShape)
                     .background(CoffeeBrown),
                 contentAlignment = Alignment.Center
@@ -248,26 +253,26 @@ fun MainActionCard(
                         imageVector = Icons.Default.EmojiEvents,
                         contentDescription = null,
                         tint = CoffeeGold,
-                        modifier = Modifier.size(30.dp)
+                        modifier = Modifier.size(24.dp)
                     )
 
                     ActionIcon.Review -> Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = null,
                         tint = CoffeeGold,
-                        modifier = Modifier.size(30.dp)
+                        modifier = Modifier.size(24.dp)
                     )
 
                     ActionIcon.AddCoffee -> Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = null,
                         tint = CoffeeGold,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(27.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(18.dp))
+            Spacer(modifier = Modifier.width(13.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -275,24 +280,32 @@ fun MainActionCard(
                 Text(
                     text = title,
                     color = CoffeeBrownDark,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 17.sp,
+                    lineHeight = 21.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 if (!subtitle.isNullOrBlank()) {
                     Text(
                         text = subtitle,
                         color = CoffeeMuted,
-                        fontSize = 14.sp
+                        fontSize = 13.sp,
+                        lineHeight = 17.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             Icon(
                 imageVector = Icons.Default.KeyboardArrowRight,
                 contentDescription = null,
                 tint = CoffeeGold,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(25.dp)
             )
         }
     }
@@ -308,20 +321,24 @@ fun SectionTitle(title: String) {
             imageVector = Icons.Default.LocalCafe,
             contentDescription = null,
             tint = CoffeeBrown,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(20.dp)
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(7.dp))
 
         Text(
+            modifier = Modifier.weight(1f, fill = false),
             text = title,
             color = CoffeeBrownDark,
-            fontSize = 23.sp,
+            fontSize = 20.sp,
+            lineHeight = 23.sp,
             fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Serif
+            fontFamily = FontFamily.Serif,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
         HorizontalDivider(
             modifier = Modifier.weight(1f),
@@ -359,29 +376,29 @@ fun CoffeeRankingItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             Box(
                 modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(13.dp))
                     .background(CoffeeBrown)
                     .border(
                         width = 1.dp,
                         color = CoffeeGold,
-                        shape = RoundedCornerShape(14.dp)
+                        shape = RoundedCornerShape(13.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "$position",
                     color = CoffeeGold,
-                    fontSize = 22.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -389,15 +406,32 @@ fun CoffeeRankingItem(
                 Text(
                     text = coffee.name,
                     color = CoffeeBrownDark,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 17.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
-                    text = "${coffee.brand} • ${coffee.type} • ${coffee.roast}",
+                    text = coffee.brand,
                     color = CoffeeMuted,
-                    fontSize = 13.sp
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
+
+                Text(
+                    text = "${coffee.type} • ${coffee.roast}",
+                    color = CoffeeMuted,
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.size(4.dp))
 
                 Text(
                     text = if (coffee.hasRating) {
@@ -406,18 +440,23 @@ fun CoffeeRankingItem(
                         "Aguardando avaliações"
                     },
                     color = CoffeeGold,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = formatPriceKgSmart(coffee.priceKg),
+                    color = if (coffee.hasPrice) CoffeeBrownDark else CoffeeMuted,
+                    fontSize = if (coffee.hasPrice) 15.sp else 13.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = if (coffee.hasPrice) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-
-            Text(
-                text = formatPriceKgSmart(coffee.priceKg),
-                color = CoffeeBrownDark,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.End
-            )
         }
     }
 }
@@ -433,7 +472,7 @@ fun ShortcutChip(
         modifier = modifier.clickable {
             onClick()
         },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = CoffeeCard
         ),
@@ -444,7 +483,7 @@ fun ShortcutChip(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 12.dp),
+                .padding(horizontal = 9.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -457,17 +496,20 @@ fun ShortcutChip(
                 imageVector = icon,
                 contentDescription = null,
                 tint = CoffeeBrown,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(18.dp)
             )
 
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(5.dp))
 
             Text(
                 text = title,
                 color = CoffeeText,
-                fontSize = 14.sp,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
                 fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

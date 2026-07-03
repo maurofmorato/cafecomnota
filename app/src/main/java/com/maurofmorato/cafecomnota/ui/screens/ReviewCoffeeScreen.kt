@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,7 +33,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
@@ -55,6 +58,12 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeText
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
+
+private val TitleTextStyle = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+private val BodyTextStyle = TextStyle(fontSize = 13.sp)
+private val FieldTextStyle = TextStyle(fontSize = 16.sp)
+private val FieldLabelTextStyle = TextStyle(fontSize = 12.sp)
+private val ChipTextStyle = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)
 
 @Composable
 fun ReviewCoffeeScreen(
@@ -89,36 +98,36 @@ fun ReviewCoffeeScreen(
 
         CafeHeader(strings = strings, compact = true)
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(18.dp))
         SectionTitle(title = "Dar nota")
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = coffeeName,
             color = CoffeeBrownDark,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 21.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 25.sp
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         if (authSession == null) {
             LoginRequiredCard()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
         }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = CoffeeCard),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(14.dp)) {
                 Text(
                     text = "Nota geral: ${formatRating(rating.toDouble())}",
                     color = CoffeeBrownDark,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold
+                    style = TitleTextStyle
                 )
 
                 Slider(
@@ -128,163 +137,120 @@ fun ReviewCoffeeScreen(
                     steps = 7
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "Compraria novamente?",
                     color = CoffeeBrownDark,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = wouldBuyAgain,
-                        onClick = { wouldBuyAgain = true },
-                        label = { Text("Sim") }
-                    )
-
-                    FilterChip(
-                        selected = !wouldBuyAgain,
-                        onClick = { wouldBuyAgain = false },
-                        label = { Text("Não") }
-                    )
+                    CompactFilterChip(selected = wouldBuyAgain, text = "Sim", onClick = { wouldBuyAgain = true })
+                    CompactFilterChip(selected = !wouldBuyAgain, text = "Não", onClick = { wouldBuyAgain = false })
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = CoffeeCard),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(14.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.Calculate, contentDescription = null, tint = CoffeeBrown)
-                    Text(
-                        text = "Preço pago",
-                        color = CoffeeBrownDark,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text(text = "Preço pago", color = CoffeeBrownDark, style = TitleTextStyle)
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Moeda atual: BRL. Informe preço e peso da embalagem.",
+                    color = CoffeeMuted,
+                    style = BodyTextStyle,
+                    lineHeight = 17.sp
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = "Moeda atual: BRL. Informe o preço da embalagem e o peso. O app calcula o preço por kg e o equivalente por 250g.",
-                    color = CoffeeMuted,
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
+                CompactOutlinedTextField(
                     value = priceText,
-                    onValueChange = { typed ->
-                        priceText = sanitizePriceInput(typed)
-                    },
+                    onValueChange = { typed -> priceText = sanitizePriceInput(typed) },
+                    label = "Preço pago (BRL)",
+                    placeholder = "Ex.: 20,00",
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { focusState ->
                             if (!focusState.isFocused) {
                                 priceText = formatDecimalForInput(priceText)
                             }
-                        },
-                    label = { Text("Preço pago (BRL)") },
-                    placeholder = { Text("Ex.: 20,00") },
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = CoffeeGold,
-                        unfocusedIndicatorColor = CoffeeLine,
-                        cursorColor = CoffeeBrown
-                    )
+                        }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                CompactOutlinedTextField(
+                    value = weightText,
+                    onValueChange = { weightText = it },
+                    label = "Peso em gramas",
+                    placeholder = "Ex.: 250",
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+                PricePreview(pricePerKg = pricePerKg)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(14.dp)) {
+                Text(text = "Preparo e comentário", color = CoffeeBrownDark, style = TitleTextStyle)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                PreparationChips(
+                    brewMethod = brewMethod,
+                    onChange = { brewMethod = it }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedTextField(
-                    value = weightText,
-                    onValueChange = { weightText = it },
+                    value = comment,
+                    onValueChange = { comment = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Peso em gramas") },
-                    placeholder = { Text("Ex.: 250, 500 ou 1000") },
-                    singleLine = true,
+                    label = { Text(text = "Comentário", style = FieldLabelTextStyle) },
+                    placeholder = {
+                        Text(
+                            text = "Ex.: aromático, corpo bom, acidez equilibrada...",
+                            style = BodyTextStyle
+                        )
+                    },
+                    minLines = 3,
+                    textStyle = TextStyle(fontSize = 15.sp, lineHeight = 19.sp),
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = CoffeeGold,
                         unfocusedIndicatorColor = CoffeeLine,
                         cursorColor = CoffeeBrown
                     )
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                PricePreview(pricePerKg = pricePerKg)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = CoffeeCard),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Preparo e comentário",
-                    color = CoffeeBrownDark,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PreparationChip(
-                        selected = brewMethod == "nao_informado",
-                        text = "Não informar",
-                        onClick = { brewMethod = "nao_informado" }
-                    )
-
-                    PreparationChip(
-                        selected = brewMethod == "coado",
-                        text = "Coado",
-                        onClick = { brewMethod = "coado" }
-                    )
-
-                    PreparationChip(
-                        selected = brewMethod == "espresso",
-                        text = "Espresso",
-                        onClick = { brewMethod = "espresso" }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = comment,
-                    onValueChange = { comment = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Comentário") },
-                    placeholder = { Text("Ex.: café aromático, corpo bom, acidez equilibrada...") },
-                    minLines = 3,
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = CoffeeGold,
-                        unfocusedIndicatorColor = CoffeeLine,
-                        cursorColor = CoffeeBrown
-                    )
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
 
         Button(
             onClick = {
@@ -326,7 +292,7 @@ fun ReviewCoffeeScreen(
                 coroutineScope.launch {
                     try {
                         reviewRepository.saveReviewAndOptionalPrice(
-                            ReviewSaveRequest(
+                            request = ReviewSaveRequest(
                                 cafeId = coffeeId,
                                 userId = authSession.userId,
                                 accessToken = authSession.accessToken,
@@ -383,13 +349,14 @@ fun ReviewCoffeeScreen(
             Icon(Icons.Default.Save, contentDescription = null)
             Text(
                 text = if (isSaving) "Salvando..." else "Salvar avaliação",
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = 8.dp),
+                fontSize = 14.sp
             )
         }
 
         if (message.isNotBlank()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = message, color = CoffeeBrown, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = message, color = CoffeeBrown, fontSize = 13.sp, lineHeight = 17.sp)
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -400,12 +367,12 @@ fun ReviewCoffeeScreen(
 private fun LoginRequiredCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = CoffeeCard),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Icon(Icons.Default.Security, contentDescription = null, tint = CoffeeBrown)
@@ -414,14 +381,15 @@ private fun LoginRequiredCard() {
                 Text(
                     text = "Login necessário",
                     color = CoffeeBrownDark,
-                    fontSize = 18.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "Para salvar avaliação e preço, entre na conta pela tela Perfil.",
                     color = CoffeeMuted,
-                    fontSize = 14.sp
+                    style = BodyTextStyle,
+                    lineHeight = 17.sp
                 )
             }
         }
@@ -429,25 +397,106 @@ private fun LoginRequiredCard() {
 }
 
 @Composable
-private fun PreparationChip(
-    selected: Boolean,
-    text: String,
-    onClick: () -> Unit
+private fun CompactOutlinedTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    modifier: Modifier = Modifier
 ) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(text) })
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.heightIn(min = 56.dp),
+        label = {
+            Text(
+                text = label,
+                style = FieldLabelTextStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        placeholder = {
+            Text(
+                text = placeholder,
+                style = BodyTextStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        singleLine = true,
+        textStyle = FieldTextStyle,
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = CoffeeGold,
+            unfocusedIndicatorColor = CoffeeLine,
+            cursorColor = CoffeeBrown
+        )
+    )
 }
 
 @Composable
-private fun PricePreview(
-    pricePerKg: Double?
+private fun CompactFilterChip(
+    selected: Boolean,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    FilterChip(
+        modifier = modifier,
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = text,
+                style = ChipTextStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    )
+}
+
+@Composable
+private fun PreparationChips(
+    brewMethod: String,
+    onChange: (String) -> Unit
+) {
+    androidx.compose.foundation.layout.Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        CompactFilterChip(
+            modifier = Modifier.fillMaxWidth(),
+            selected = brewMethod == "nao_informado",
+            text = "Não informar",
+            onClick = { onChange("nao_informado") }
+        )
+
+        CompactFilterChip(
+            modifier = Modifier.fillMaxWidth(),
+            selected = brewMethod == "coado",
+            text = "Coado",
+            onClick = { onChange("coado") }
+        )
+
+        CompactFilterChip(
+            modifier = Modifier.fillMaxWidth(),
+            selected = brewMethod == "espresso",
+            text = "Espresso",
+            onClick = { onChange("espresso") }
+        )
+    }
+}
+
+@Composable
+private fun PricePreview(pricePerKg: Double?) {
     val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
 
     if (pricePerKg == null) {
         Text(
             text = "Preço por kg será calculado automaticamente.",
             color = CoffeeMuted,
-            fontSize = 14.sp
+            fontSize = 13.sp,
+            lineHeight = 17.sp
         )
         return
     }
@@ -457,23 +506,23 @@ private fun PricePreview(
     Text(
         text = "Preço por kg: ${formatter.format(pricePerKg)}",
         color = CoffeeBrownDark,
-        fontSize = 17.sp,
+        fontSize = 15.sp,
+        lineHeight = 19.sp,
         fontWeight = FontWeight.Bold
     )
 
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(3.dp))
 
     Text(
         text = "Equivalente por 250g: ${formatter.format(price250g)}",
         color = CoffeeText,
-        fontSize = 15.sp
+        fontSize = 13.sp,
+        lineHeight = 17.sp
     )
 }
 
 private fun sanitizePriceInput(value: String): String {
-    return value.filter { char ->
-        char.isDigit() || char == ',' || char == '.'
-    }
+    return value.filter { char -> char.isDigit() || char == ',' || char == '.' }
 }
 
 private fun parseDecimal(value: String): Double? {
@@ -510,23 +559,11 @@ private fun parseDecimal(value: String): Double? {
 private fun formatDecimalForInput(value: String): String {
     val parsedValue = parseDecimal(value) ?: return value.trim()
 
-    return String.format(
-        Locale("pt", "BR"),
-        "%.2f",
-        parsedValue
-    )
+    return String.format(Locale("pt", "BR"), "%.2f", parsedValue)
 }
 
-private fun calculatePricePerKg(
-    pricePaid: Double?,
-    weightGrams: Double?
-): Double? {
-    if (
-        pricePaid == null ||
-        weightGrams == null ||
-        pricePaid <= 0.0 ||
-        weightGrams <= 0.0
-    ) {
+private fun calculatePricePerKg(pricePaid: Double?, weightGrams: Double?): Double? {
+    if (pricePaid == null || weightGrams == null || pricePaid <= 0.0 || weightGrams <= 0.0) {
         return null
     }
 
@@ -540,25 +577,11 @@ private fun validateReview(
     hasTypedPrice: Boolean,
     hasTypedWeight: Boolean
 ): String? {
-    if (rating < 1.0 || rating > 5.0) {
-        return "A nota deve estar entre 1 e 5."
-    }
-
-    if (hasTypedPrice && (pricePaid == null || pricePaid <= 0.0)) {
-        return "Informe um preço válido."
-    }
-
-    if (hasTypedWeight && (weightGrams == null || weightGrams <= 0.0)) {
-        return "Informe um peso válido em gramas."
-    }
-
-    if (hasTypedPrice != hasTypedWeight) {
-        return "Para registrar preço, informe preço e peso."
-    }
-
-    if (pricePaid != null && pricePaid > 1000.0) {
-        return "Preço muito alto. Confira se você digitou corretamente."
-    }
+    if (rating < 1.0 || rating > 5.0) return "A nota deve estar entre 1 e 5."
+    if (hasTypedPrice && (pricePaid == null || pricePaid <= 0.0)) return "Informe um preço válido."
+    if (hasTypedWeight && (weightGrams == null || weightGrams <= 0.0)) return "Informe um peso válido em gramas."
+    if (hasTypedPrice != hasTypedWeight) return "Para registrar preço, informe preço e peso."
+    if (pricePaid != null && pricePaid > 1000.0) return "Preço muito alto. Confira se você digitou corretamente."
 
     return null
 }

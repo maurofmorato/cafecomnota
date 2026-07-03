@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
@@ -23,7 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.data.repository.CoffeeDataSource
@@ -61,18 +65,18 @@ fun HomeScreen(
     ) {
         CafeHeader(strings = strings)
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         DataSourceChip(dataSource = dataSource)
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         HomeSearchBar(
             strings = strings,
             onSearch = onSearch
         )
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         MainActionCard(
             iconType = ActionIcon.Ranking,
@@ -83,7 +87,7 @@ fun HomeScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(9.dp))
 
         MainActionCard(
             iconType = ActionIcon.Review,
@@ -101,7 +105,7 @@ fun HomeScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(9.dp))
 
         MainActionCard(
             iconType = ActionIcon.AddCoffee,
@@ -119,7 +123,7 @@ fun HomeScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(26.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         SectionTitle(title = strings.sectionTopWeek)
 
@@ -147,7 +151,7 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         SectionTitle(title = strings.sectionShortcuts)
 
@@ -201,7 +205,7 @@ private fun DataSourceChip(
                 color = CoffeeCard,
                 shape = RoundedCornerShape(50)
             )
-            .height(34.dp),
+            .height(30.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -211,9 +215,15 @@ private fun DataSourceChip(
             tint = CoffeeBrown
         )
 
+        Spacer(modifier = Modifier.width(6.dp))
+
         Text(
-            text = text,
+            text = "$text • teste 1.0.13",
             color = CoffeeMuted,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
         )
     }
