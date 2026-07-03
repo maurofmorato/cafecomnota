@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
@@ -22,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +59,9 @@ fun ProfileScreen(
     isAdmin: Boolean,
     onLanguageChange: (AppLanguage) -> Unit,
     onLogin: (String, String) -> Unit,
+    onGoogleLogin: () -> Unit,
+    onRequestPasswordReset: (String) -> Unit,
+    onChangePassword: (String, String) -> Unit,
     onLogout: () -> Unit,
     onNavigate: (AppDestination) -> Unit
 ) {
@@ -68,50 +73,60 @@ fun ProfileScreen(
             compact = true
         )
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         SectionTitle(title = "Perfil")
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        AuthCard(
-            authSession = authSession,
-            isLoggingIn = isLoggingIn,
-            loginMessage = loginMessage,
-            onLogin = onLogin,
-            onLogout = onLogout
-        )
+        if (authSession == null) {
+            AuthCard(
+                isLoggingIn = isLoggingIn,
+                loginMessage = loginMessage,
+                onLogin = onLogin,
+                onGoogleLogin = onGoogleLogin,
+                onRequestPasswordReset = onRequestPasswordReset
+            )
+        } else {
+            AccountCard(
+                authSession = authSession,
+                isWorking = isLoggingIn,
+                message = loginMessage,
+                onChangePassword = onChangePassword,
+                onLogout = onLogout
+            )
+        }
 
         if (authSession != null && isAdmin) {
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             SectionTitle(title = "Administração")
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             AdminCard()
         }
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         SectionTitle(title = "Idioma")
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         LanguageCard(
             currentLanguage = currentLanguage,
             onLanguageChange = onLanguageChange
         )
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         SectionTitle(title = "Próximos recursos")
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         InfoCard(
-            title = "Conta e dados reais",
-            text = "O login é a base para salvar avaliações, informar preços e cadastrar cafés com segurança."
+            title = "Conta e segurança",
+            text = "Agora a conta já tem troca de senha, recuperação por e-mail e entrada pelo Google, dependendo da configuração do Supabase."
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -120,11 +135,11 @@ fun ProfileScreen(
 
 @Composable
 private fun AuthCard(
-    authSession: AuthSession?,
     isLoggingIn: Boolean,
     loginMessage: String,
     onLogin: (String, String) -> Unit,
-    onLogout: () -> Unit
+    onGoogleLogin: () -> Unit,
+    onRequestPasswordReset: (String) -> Unit
 ) {
     val email = remember {
         mutableStateOf("")
@@ -136,7 +151,7 @@ private fun AuthCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = CoffeeCard
         ),
@@ -145,136 +160,302 @@ private fun AuthCard(
         )
     ) {
         androidx.compose.foundation.layout.Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = if (authSession == null) Icons.Default.Login else Icons.Default.Person,
+                    imageVector = Icons.Default.Login,
                     contentDescription = null,
                     tint = CoffeeBrown
                 )
 
                 Text(
-                    text = if (authSession == null) "Entrar na conta" else "Conta conectada",
+                    text = "Entrar na conta",
                     color = CoffeeBrownDark,
-                    fontSize = 19.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Entre com e-mail/senha ou use o Google. Para recuperar senha, informe seu e-mail e toque em Esqueci minha senha.",
+                color = CoffeeMuted,
+                fontSize = 13.sp,
+                lineHeight = 17.sp
+            )
+
             Spacer(modifier = Modifier.height(10.dp))
 
-            if (authSession == null) {
-                Text(
-                    text = "Entre com o usuário criado no Supabase Auth. Depois vamos usar essa sessão para salvar preços e avaliações.",
-                    color = CoffeeMuted,
-                    fontSize = 14.sp
+            OutlinedTextField(
+                value = email.value,
+                onValueChange = {
+                    email.value = it
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Email")
+                },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = CoffeeGold,
+                    unfocusedIndicatorColor = CoffeeLine,
+                    cursorColor = CoffeeBrown
                 )
+            )
 
-                Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
-                    value = email.value,
-                    onValueChange = {
-                        email.value = it
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Email")
-                    },
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = CoffeeGold,
-                        unfocusedIndicatorColor = CoffeeLine,
-                        cursorColor = CoffeeBrown
-                    )
+            OutlinedTextField(
+                value = password.value,
+                onValueChange = {
+                    password.value = it
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Senha")
+                },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = CoffeeGold,
+                    unfocusedIndicatorColor = CoffeeLine,
+                    cursorColor = CoffeeBrown
                 )
+            )
 
-                Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-                OutlinedTextField(
-                    value = password.value,
-                    onValueChange = {
-                        password.value = it
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Senha")
-                    },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = CoffeeGold,
-                        unfocusedIndicatorColor = CoffeeLine,
-                        cursorColor = CoffeeBrown
+            Button(
+                onClick = {
+                    onLogin(
+                        email.value,
+                        password.value
                     )
+                },
+                enabled = !isLoggingIn,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = null
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = {
-                        onLogin(
-                            email.value,
-                            password.value
-                        )
-                    },
-                    enabled = !isLoggingIn,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Security,
-                        contentDescription = null
-                    )
-
-                    Text(
-                        text = if (isLoggingIn) "Entrando..." else "Entrar",
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
-            } else {
-                Text(
-                    text = authSession.email,
-                    color = CoffeeText,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Usuário autenticado. Pronto para as próximas etapas de gravação no Supabase.",
-                    color = CoffeeMuted,
-                    fontSize = 14.sp
+                    text = if (isLoggingIn) "Aguarde..." else "Entrar",
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onGoogleLogin,
+                enabled = !isLoggingIn,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Login,
+                    contentDescription = null
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Entrar com Google",
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
 
-                OutlinedButton(
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Logout,
-                        contentDescription = null
-                    )
-
-                    Text(
-                        text = "Sair",
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
+            TextButton(
+                onClick = {
+                    onRequestPasswordReset(email.value)
+                },
+                enabled = !isLoggingIn,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Esqueci minha senha")
             }
 
             if (loginMessage.isNotBlank()) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = loginMessage,
                     color = CoffeeBrown,
-                    fontSize = 14.sp
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountCard(
+    authSession: AuthSession,
+    isWorking: Boolean,
+    message: String,
+    onChangePassword: (String, String) -> Unit,
+    onLogout: () -> Unit
+) {
+    val newPassword = remember {
+        mutableStateOf("")
+    }
+
+    val confirmPassword = remember {
+        mutableStateOf("")
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CoffeeCard
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = CoffeeBrown
+                )
+
+                Text(
+                    text = "Conta conectada",
+                    color = CoffeeBrownDark,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = authSession.email,
+                color = CoffeeText,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Você pode alterar sua senha aqui. Se veio por um link de recuperação, informe a nova senha e salve.",
+                color = CoffeeMuted,
+                fontSize = 13.sp,
+                lineHeight = 17.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Password,
+                    contentDescription = null,
+                    tint = CoffeeBrown
+                )
+
+                Text(
+                    text = "Alterar senha",
+                    color = CoffeeBrownDark,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = newPassword.value,
+                onValueChange = {
+                    newPassword.value = it
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Nova senha")
+                },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = CoffeeGold,
+                    unfocusedIndicatorColor = CoffeeLine,
+                    cursorColor = CoffeeBrown
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = confirmPassword.value,
+                onValueChange = {
+                    confirmPassword.value = it
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Confirmar nova senha")
+                },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = CoffeeGold,
+                    unfocusedIndicatorColor = CoffeeLine,
+                    cursorColor = CoffeeBrown
+                )
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = {
+                    onChangePassword(
+                        newPassword.value,
+                        confirmPassword.value
+                    )
+                },
+                enabled = !isWorking,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isWorking) "Salvando..." else "Salvar nova senha")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onLogout,
+                enabled = !isWorking,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Logout,
+                    contentDescription = null
+                )
+
+                Text(
+                    text = "Sair",
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            if (message.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = message,
+                    color = CoffeeBrown,
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp
                 )
             }
         }
@@ -285,7 +466,7 @@ private fun AuthCard(
 private fun AdminCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = CoffeeCard
         ),
@@ -294,7 +475,7 @@ private fun AdminCard() {
         )
     ) {
         androidx.compose.foundation.layout.Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -308,27 +489,18 @@ private fun AdminCard() {
                 Text(
                     text = "Administração ativa",
                     color = CoffeeBrownDark,
-                    fontSize = 19.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Este usuário pode moderar cafés pelo celular. Abra o detalhe de um café para ocultar ou marcar como pendente.",
                 color = CoffeeMuted,
-                fontSize = 14.sp,
-                lineHeight = 19.sp
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Próxima etapa: tela de fila com cafés e comentários recentes.",
-                color = CoffeeText,
                 fontSize = 13.sp,
-                lineHeight = 18.sp
+                lineHeight = 17.sp
             )
         }
     }
@@ -341,7 +513,7 @@ private fun LanguageCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = CoffeeCard
         ),
@@ -350,7 +522,7 @@ private fun LanguageCard(
         )
     ) {
         androidx.compose.foundation.layout.Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -364,12 +536,12 @@ private fun LanguageCard(
                 Text(
                     text = "Idioma do aplicativo",
                     color = CoffeeBrownDark,
-                    fontSize = 19.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             AppLanguage.values().forEach { language ->
                 FilterChip(
@@ -397,7 +569,7 @@ private fun InfoCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = CoffeeCard
         ),
@@ -406,12 +578,12 @@ private fun InfoCard(
         )
     ) {
         androidx.compose.foundation.layout.Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
             Text(
                 text = title,
                 color = CoffeeBrownDark,
-                fontSize = 18.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold
             )
 
@@ -420,7 +592,8 @@ private fun InfoCard(
             Text(
                 text = text,
                 color = CoffeeMuted,
-                fontSize = 14.sp
+                fontSize = 13.sp,
+                lineHeight = 17.sp
             )
         }
     }

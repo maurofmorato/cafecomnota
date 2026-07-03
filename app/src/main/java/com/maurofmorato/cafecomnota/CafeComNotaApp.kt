@@ -1,5 +1,7 @@
 package com.maurofmorato.cafecomnota
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -39,7 +41,10 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeCream
 import kotlinx.coroutines.launch
 
 @Composable
-fun CafeComNotaApp() {
+fun CafeComNotaApp(
+    authDeepLink: String? = null,
+    onAuthDeepLinkConsumed: () -> Unit = {}
+) {
     CafeComNotaTheme {
         val context = LocalContext.current
 
@@ -323,6 +328,139 @@ fun CafeComNotaApp() {
             )
         }
 
+        fun doGoogleLogin() {
+            try {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(authRepository.buildGoogleLoginUrl())
+                )
+
+                context.startActivity(intent)
+                loginMessage = "Abrindo login do Google..."
+
+                CafeAnalytics.logEvent(
+                    eventName = "google_login_start",
+                    params = mapOf(
+                        "provider" to "google"
+                    )
+                )
+            } catch (throwable: Throwable) {
+                loginMessage = throwable.message ?: "Não foi possível abrir o login do Google."
+
+                CafeAnalytics.recordNonFatal(
+                    throwable = throwable,
+                    params = mapOf(
+                        "screen" to "profile",
+                        "action" to "google_login_start"
+                    )
+                )
+            }
+        }
+
+        fun doRequestPasswordReset(
+            email: String
+        ) {
+            if (isLoggingIn) {
+                return
+            }
+
+            val cleanedEmail = email.trim()
+
+            if (cleanedEmail.isBlank()) {
+                loginMessage = "Informe o e-mail para recuperar a senha."
+                return
+            }
+
+            isLoggingIn = true
+            loginMessage = "Enviando recuperação de senha..."
+
+            coroutineScope.launch {
+                try {
+                    authRepository.requestPasswordReset(cleanedEmail)
+
+                    loginMessage = "Enviamos um link para seu e-mail. Abra o link no celular e informe a nova senha no app."
+
+                    CafeAnalytics.logEvent(
+                        eventName = "password_reset_requested",
+                        params = mapOf(
+                            "email_domain" to cleanedEmail.substringAfter("@", "")
+                        )
+                    )
+                } catch (throwable: Throwable) {
+                    loginMessage = throwable.message ?: "Não foi possível enviar recuperação de senha."
+
+                    CafeAnalytics.recordNonFatal(
+                        throwable = throwable,
+                        params = mapOf(
+                            "screen" to "profile",
+                            "action" to "request_password_reset"
+                        )
+                    )
+                } finally {
+                    isLoggingIn = false
+                }
+            }
+        }
+
+        fun doChangePassword(
+            newPassword: String,
+            confirmPassword: String
+        ) {
+            if (isLoggingIn) {
+                return
+            }
+
+            val session = authSession
+
+            if (session == null) {
+                loginMessage = "Entre na conta antes de alterar a senha."
+                return
+            }
+
+            if (newPassword.length < 6) {
+                loginMessage = "A nova senha precisa ter pelo menos 6 caracteres."
+                return
+            }
+
+            if (newPassword != confirmPassword) {
+                loginMessage = "A confirmação da senha não confere."
+                return
+            }
+
+            isLoggingIn = true
+            loginMessage = "Alterando senha..."
+
+            coroutineScope.launch {
+                try {
+                    authRepository.updatePassword(
+                        accessToken = session.accessToken,
+                        newPassword = newPassword
+                    )
+
+                    loginMessage = "Senha alterada com sucesso."
+
+                    CafeAnalytics.logEvent(
+                        eventName = "password_changed",
+                        params = mapOf(
+                            "source" to "profile"
+                        )
+                    )
+                } catch (throwable: Throwable) {
+                    loginMessage = throwable.message ?: "Não foi possível alterar a senha."
+
+                    CafeAnalytics.recordNonFatal(
+                        throwable = throwable,
+                        params = mapOf(
+                            "screen" to "profile",
+                            "action" to "change_password"
+                        )
+                    )
+                } finally {
+                    isLoggingIn = false
+                }
+            }
+        }
+
         fun afterReviewSaved() {
             currentDestination = AppDestination.CoffeeDetail.name
             reloadCoffees(source = "review_saved")
@@ -336,6 +474,49 @@ fun CafeComNotaApp() {
         fun afterCoffeeCreated() {
             currentDestination = AppDestination.Home.name
             reloadCoffees(source = "coffee_created")
+        }
+
+        LaunchedEffect(authDeepLink) {
+            val deepLink = authDeepLink
+
+            if (!deepLink.isNullOrBlank()) {
+                isLoggingIn = true
+                loginMessage = "Recebendo retorno de autenticação..."
+
+                try {
+                    val session = authRepository.loginFromDeepLink(deepLink)
+
+                    authSession = session
+                    refreshAdminStatus(session)
+                    CafeAnalytics.setUserId(session.userId)
+
+                    loginMessage = if (deepLink.contains("reset-password")) {
+                        "Link de recuperação recebido. Informe sua nova senha abaixo."
+                    } else {
+                        "Login realizado com sucesso."
+                    }
+
+                    CafeAnalytics.logEvent(
+                        eventName = "auth_deeplink_success",
+                        params = mapOf(
+                            "has_reset" to deepLink.contains("reset-password")
+                        )
+                    )
+                } catch (throwable: Throwable) {
+                    loginMessage = throwable.message ?: "Não foi possível concluir a autenticação."
+
+                    CafeAnalytics.recordNonFatal(
+                        throwable = throwable,
+                        params = mapOf(
+                            "screen" to "app",
+                            "action" to "auth_deeplink"
+                        )
+                    )
+                } finally {
+                    isLoggingIn = false
+                    onAuthDeepLinkConsumed()
+                }
+            }
         }
 
         LaunchedEffect(Unit) {
@@ -465,6 +646,9 @@ fun CafeComNotaApp() {
                         isAdmin = isAdmin,
                         onLanguageChange = ::changeLanguage,
                         onLogin = ::doLogin,
+                        onGoogleLogin = ::doGoogleLogin,
+                        onRequestPasswordReset = ::doRequestPasswordReset,
+                        onChangePassword = ::doChangePassword,
                         onLogout = ::doLogout,
                         onNavigate = {
                             navigateTo(
