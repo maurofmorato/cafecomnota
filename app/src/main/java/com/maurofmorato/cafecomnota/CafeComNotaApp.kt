@@ -333,6 +333,11 @@ fun CafeComNotaApp() {
             reloadCoffees(source = "admin_moderated_coffee")
         }
 
+        fun afterCoffeeCreated() {
+            currentDestination = AppDestination.Home.name
+            reloadCoffees(source = "coffee_created")
+        }
+
         LaunchedEffect(Unit) {
             val savedSession = authRepository.getSavedSession()
             authSession = savedSession
@@ -519,12 +524,15 @@ fun CafeComNotaApp() {
                     AppDestination.AddCoffee -> AddCoffeeScreen(
                         innerPadding = innerPadding,
                         strings = strings,
+                        authSession = authSession,
+                        isAdmin = isAdmin,
                         onBack = {
                             navigateTo(
                                 newDestination = AppDestination.Home,
                                 source = "add_coffee_back"
                             )
-                        }
+                        },
+                        onSaved = ::afterCoffeeCreated
                     )
                 }
             }
