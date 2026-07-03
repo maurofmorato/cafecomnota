@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
+import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.data.auth.SupabaseAuthRepository
 import com.maurofmorato.cafecomnota.data.repository.CoffeeDataSource
@@ -48,6 +49,10 @@ fun CafeComNotaApp() {
 
         val authRepository = remember {
             SupabaseAuthRepository(context)
+        }
+
+        val adminRepository = remember {
+            SupabaseAdminRepository()
         }
 
         val coroutineScope = rememberCoroutineScope()
@@ -85,6 +90,14 @@ fun CafeComNotaApp() {
         }
 
         var loginMessage by remember {
+            mutableStateOf("")
+        }
+
+        var isAdmin by remember {
+            mutableStateOf(false)
+        }
+
+        var adminMessage by remember {
             mutableStateOf("")
         }
 
@@ -196,6 +209,42 @@ fun CafeComNotaApp() {
             )
         }
 
+        fun refreshAdminStatus(
+            session: AuthSession?
+        ) {
+            isAdmin = false
+            adminMessage = ""
+
+            if (session == null) {
+                return
+            }
+
+            coroutineScope.launch {
+                try {
+                    isAdmin = adminRepository.isCurrentUserAdmin(
+                        accessToken = session.accessToken
+                    )
+
+                    adminMessage = if (isAdmin) {
+                        "Administração ativa."
+                    } else {
+                        ""
+                    }
+                } catch (throwable: Throwable) {
+                    isAdmin = false
+                    adminMessage = throwable.message ?: "Não foi possível verificar permissão administrativa."
+
+                    CafeAnalytics.recordNonFatal(
+                        throwable = throwable,
+                        params = mapOf(
+                            "screen" to "app",
+                            "action" to "refresh_admin_status"
+                        )
+                    )
+                }
+            }
+        }
+
         fun doLogin(
             email: String,
             password: String
@@ -222,6 +271,7 @@ fun CafeComNotaApp() {
                     )
 
                     authSession = session
+                    refreshAdminStatus(session)
                     CafeAnalytics.setUserId(session.userId)
 
                     CafeAnalytics.logEvent(
@@ -260,6 +310,8 @@ fun CafeComNotaApp() {
         fun doLogout() {
             authRepository.logout()
             authSession = null
+            isAdmin = false
+            adminMessage = ""
             loginMessage = "Você saiu da conta."
 
             CafeAnalytics.setUserId(null)
@@ -276,12 +328,18 @@ fun CafeComNotaApp() {
             reloadCoffees(source = "review_saved")
         }
 
+        fun afterCoffeeModerated() {
+            currentDestination = AppDestination.Home.name
+            reloadCoffees(source = "admin_moderated_coffee")
+        }
+
         LaunchedEffect(Unit) {
             val savedSession = authRepository.getSavedSession()
             authSession = savedSession
 
             savedSession?.let { session ->
                 CafeAnalytics.setUserId(session.userId)
+                refreshAdminStatus(session)
                 loginMessage = "Sessão restaurada."
             }
 
@@ -399,6 +457,7 @@ fun CafeComNotaApp() {
                         authSession = authSession,
                         isLoggingIn = isLoggingIn,
                         loginMessage = loginMessage,
+                        isAdmin = isAdmin,
                         onLanguageChange = ::changeLanguage,
                         onLogin = ::doLogin,
                         onLogout = ::doLogout,
@@ -414,6 +473,8 @@ fun CafeComNotaApp() {
                         innerPadding = innerPadding,
                         strings = strings,
                         coffee = selectedCoffee,
+                        authSession = authSession,
+                        isAdmin = isAdmin,
                         onBack = {
                             navigateTo(
                                 newDestination = AppDestination.Home,
@@ -436,7 +497,8 @@ fun CafeComNotaApp() {
                                 newDestination = AppDestination.ReviewCoffee,
                                 source = "coffee_detail"
                             )
-                        }
+                        },
+                        onCoffeeModerated = ::afterCoffeeModerated
                     )
 
                     AppDestination.ReviewCoffee -> ReviewCoffeeScreen(

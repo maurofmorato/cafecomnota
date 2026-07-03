@@ -25,6 +25,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +86,66 @@ fun ReviewCoffeeScreen(
     var brewMethod by remember { mutableStateOf("nao_informado") }
     var comment by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
+    var isLoadingExisting by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
+
+    LaunchedEffect(coffeeId, authSession?.userId) {
+        val session = authSession
+
+        if (session == null) {
+            return@LaunchedEffect
+        }
+
+        isLoadingExisting = true
+
+        try {
+            val existingReview = reviewRepository.loadExistingReviewForUser(
+                cafeId = coffeeId,
+                userId = session.userId,
+                accessToken = session.accessToken
+            )
+
+            if (existingReview != null) {
+                existingReview.rating?.let {
+                    rating = it.toFloat()
+                }
+
+                existingReview.wouldBuyAgain?.let {
+                    wouldBuyAgain = it
+                }
+
+                existingReview.pricePaid?.let {
+                    priceText = formatDecimalForInput(it.toString())
+                }
+
+                existingReview.weightGrams?.let {
+                    weightText = formatWeightForInput(it)
+                }
+
+                existingReview.brewMethod?.let {
+                    brewMethod = it.ifBlank { "nao_informado" }
+                }
+
+                comment = existingReview.comment.orEmpty()
+                message = "Sua avaliação anterior foi carregada para edição."
+            } else {
+                message = ""
+            }
+        } catch (throwable: Throwable) {
+            CafeAnalytics.recordNonFatal(
+                throwable = throwable,
+                params = mapOf(
+                    "screen" to "review",
+                    "action" to "load_existing_review",
+                    "coffee_id" to coffeeId
+                )
+            )
+
+            message = "Não consegui carregar avaliação anterior. Você pode preencher normalmente."
+        } finally {
+            isLoadingExisting = false
+        }
+    }
 
     val pricePaid = parseDecimal(priceText)
     val weightGrams = parseDecimal(weightText)
@@ -115,6 +175,17 @@ fun ReviewCoffeeScreen(
         if (authSession == null) {
             LoginRequiredCard()
             Spacer(modifier = Modifier.height(14.dp))
+        }
+
+        if (isLoadingExisting) {
+            Text(
+                text = "Carregando sua avaliação anterior...",
+                color = CoffeeMuted,
+                fontSize = 13.sp,
+                lineHeight = 17.sp
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
         Card(
@@ -348,7 +419,7 @@ fun ReviewCoffeeScreen(
         ) {
             Icon(Icons.Default.Save, contentDescription = null)
             Text(
-                text = if (isSaving) "Salvando..." else "Salvar avaliação",
+                text = if (isSaving) "Salvando..." else "Salvar / atualizar avaliação",
                 modifier = Modifier.padding(start = 8.dp),
                 fontSize = 14.sp
             )
@@ -560,6 +631,14 @@ private fun formatDecimalForInput(value: String): String {
     val parsedValue = parseDecimal(value) ?: return value.trim()
 
     return String.format(Locale("pt", "BR"), "%.2f", parsedValue)
+}
+
+private fun formatWeightForInput(value: Double): String {
+    return if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        String.format(Locale("pt", "BR"), "%.2f", value)
+    }
 }
 
 private fun calculatePricePerKg(pricePaid: Double?, weightGrams: Double?): Double? {

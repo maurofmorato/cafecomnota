@@ -54,6 +54,7 @@ fun ProfileScreen(
     authSession: AuthSession?,
     isLoggingIn: Boolean,
     loginMessage: String,
+    isAdmin: Boolean,
     onLanguageChange: (AppLanguage) -> Unit,
     onLogin: (String, String) -> Unit,
     onLogout: () -> Unit,
@@ -80,6 +81,16 @@ fun ProfileScreen(
             onLogin = onLogin,
             onLogout = onLogout
         )
+
+        if (authSession != null && isAdmin) {
+            Spacer(modifier = Modifier.height(22.dp))
+
+            SectionTitle(title = "Administração")
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AdminCard()
+        }
 
         Spacer(modifier = Modifier.height(22.dp))
 
@@ -266,6 +277,59 @@ private fun AuthCard(
                     fontSize = 14.sp
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AdminCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CoffeeCard
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = null,
+                    tint = CoffeeBrown
+                )
+
+                Text(
+                    text = "Administração ativa",
+                    color = CoffeeBrownDark,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "Este usuário pode moderar cafés pelo celular. Abra o detalhe de um café para ocultar ou marcar como pendente.",
+                color = CoffeeMuted,
+                fontSize = 14.sp,
+                lineHeight = 19.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Próxima etapa: tela de fila com cafés e comentários recentes.",
+                color = CoffeeText,
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
         }
     }
 }

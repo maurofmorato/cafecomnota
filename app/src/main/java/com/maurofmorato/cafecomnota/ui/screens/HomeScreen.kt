@@ -218,7 +218,7 @@ private fun DataSourceChip(
         Spacer(modifier = Modifier.width(6.dp))
 
         Text(
-            text = "$text • teste 1.0.13",
+            text = "$text • teste 1.0.14",
             color = CoffeeMuted,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,

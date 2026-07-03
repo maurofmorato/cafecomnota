@@ -3,6 +3,7 @@ package com.maurofmorato.cafecomnota.data.review
 import com.maurofmorato.cafecomnota.data.supabase.SupabaseConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -13,6 +14,39 @@ import java.util.Date
 import java.util.Locale
 
 class SupabaseReviewRepository {
+    suspend fun loadExistingReviewForUser(
+        cafeId: String,
+        userId: String,
+        accessToken: String
+    ): ExistingReviewData? {
+        return withContext(Dispatchers.IO) {
+            val review = loadReviewRow(
+                cafeId = cafeId,
+                userId = userId,
+                accessToken = accessToken
+            )
+
+            val currentPrice = loadCurrentPriceRow(
+                cafeId = cafeId,
+                userId = userId,
+                accessToken = accessToken
+            )
+
+            val result = ExistingReviewData(
+                rating = review?.optNullableDouble("nota_geral"),
+                wouldBuyAgain = review?.optNullableBoolean("compraria_novamente"),
+                pricePaid = currentPrice?.optNullableDouble("preco_pago")
+                    ?: review?.optNullableDouble("preco_pago"),
+                weightGrams = currentPrice?.optNullableDouble("peso_g")
+                    ?: review?.optNullableDouble("peso_g"),
+                brewMethod = review?.optNullableString("metodo_preparo"),
+                comment = review?.optNullableString("comentario")
+            )
+
+            result.takeIf { it.hasAnyData }
+        }
+    }
+
     suspend fun saveReviewAndOptionalPrice(
         request: ReviewSaveRequest
     ) {
@@ -31,6 +65,44 @@ class SupabaseReviewRepository {
         }
     }
 
+    private fun loadReviewRow(
+        cafeId: String,
+        userId: String,
+        accessToken: String
+    ): JSONObject? {
+        val query = listOf(
+            "select=nota_geral,compraria_novamente,metodo_preparo,comentario,preco_pago,peso_g,created_at,updated_at",
+            "cafe_id=eq.${encode(cafeId)}",
+            "usuario_id=eq.${encode(userId)}",
+            "limit=1"
+        ).joinToString("&")
+
+        val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/avaliacoes?$query"
+        return executeGetArray(
+            endpoint = endpoint,
+            accessToken = accessToken
+        ).firstObjectOrNull()
+    }
+
+    private fun loadCurrentPriceRow(
+        cafeId: String,
+        userId: String,
+        accessToken: String
+    ): JSONObject? {
+        val query = listOf(
+            "select=preco_pago,peso_g,preco_kg,preco_250g,data_preco,created_at,updated_at,moeda",
+            "cafe_id=eq.${encode(cafeId)}",
+            "usuario_id=eq.${encode(userId)}",
+            "limit=1"
+        ).joinToString("&")
+
+        val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/precos_cafe?$query"
+        return executeGetArray(
+            endpoint = endpoint,
+            accessToken = accessToken
+        ).firstObjectOrNull()
+    }
+
     private fun saveReview(
         request: ReviewSaveRequest
     ) {
@@ -43,7 +115,12 @@ class SupabaseReviewRepository {
             .put("nota_geral", request.rating)
             .put("compraria_novamente", request.wouldBuyAgain)
             .put("metodo_preparo", request.brewMethod.ifBlank { "nao_informado" })
-            .put("comentario", request.comment.ifBlank { JSONObject.NULL })
+
+        if (request.comment.isBlank()) {
+            body.put("comentario", JSONObject.NULL)
+        } else {
+            body.put("comentario", request.comment)
+        }
 
         if (
             request.pricePaid != null &&
@@ -106,6 +183,39 @@ class SupabaseReviewRepository {
             body = body,
             prefer = "return=representation"
         )
+    }
+
+    private fun executeGetArray(
+        endpoint: String,
+        accessToken: String
+    ): JSONArray {
+        val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 12_000
+            readTimeout = 12_000
+
+            setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
+            setRequestProperty("Authorization", "Bearer $accessToken")
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Content-Type", "application/json")
+        }
+
+        try {
+            val statusCode = connection.responseCode
+            val responseBody = if (statusCode in 200..299) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            }
+
+            if (statusCode !in 200..299) {
+                throw IllegalStateException(parseErrorMessage(responseBody))
+            }
+
+            return JSONArray(responseBody.ifBlank { "[]" })
+        } finally {
+            connection.disconnect()
+        }
     }
 
     private fun executePost(
@@ -182,5 +292,36 @@ class SupabaseReviewRepository {
             "yyyy-MM-dd",
             Locale.US
         ).format(Date())
+    }
+
+    private fun JSONArray.firstObjectOrNull(): JSONObject? {
+        return if (length() > 0) {
+            optJSONObject(0)
+        } else {
+            null
+        }
+    }
+
+    private fun JSONObject.optNullableString(name: String): String? {
+        if (isNull(name)) return null
+        return optString(name).takeIf { it.isNotBlank() }
+    }
+
+    private fun JSONObject.optNullableDouble(name: String): Double? {
+        if (isNull(name)) return null
+        return try {
+            getDouble(name)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun JSONObject.optNullableBoolean(name: String): Boolean? {
+        if (isNull(name)) return null
+        return try {
+            getBoolean(name)
+        } catch (_: Exception) {
+            null
+        }
     }
 }

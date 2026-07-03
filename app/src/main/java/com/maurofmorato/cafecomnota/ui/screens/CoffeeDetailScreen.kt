@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedAssistChip
@@ -30,12 +31,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
+import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
@@ -51,14 +59,18 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeGold
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeLine
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeText
+import kotlinx.coroutines.launch
 
 @Composable
 fun CoffeeDetailScreen(
     innerPadding: PaddingValues,
     strings: AppStrings,
     coffee: CoffeeUiModel,
+    authSession: AuthSession?,
+    isAdmin: Boolean,
     onBack: () -> Unit,
-    onReview: () -> Unit
+    onReview: () -> Unit,
+    onCoffeeModerated: () -> Unit
 ) {
     CafeResponsiveContent(
         innerPadding = innerPadding
@@ -99,6 +111,16 @@ fun CoffeeDetailScreen(
             Text(
                 text = strings.detailGiveMyRating,
                 modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        if (isAdmin && authSession != null) {
+            Spacer(modifier = Modifier.height(14.dp))
+
+            AdminModerationCard(
+                coffee = coffee,
+                authSession = authSession,
+                onCoffeeModerated = onCoffeeModerated
             )
         }
 
@@ -205,6 +227,152 @@ fun CoffeeDetailScreen(
         }
 
         Spacer(modifier = Modifier.height(10.dp))
+    }
+}
+
+@Composable
+private fun AdminModerationCard(
+    coffee: CoffeeUiModel,
+    authSession: AuthSession,
+    onCoffeeModerated: () -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val adminRepository = remember {
+        SupabaseAdminRepository()
+    }
+
+    var isWorking by remember {
+        mutableStateOf(false)
+    }
+
+    var message by remember {
+        mutableStateOf("")
+    }
+
+    fun updateStatus(
+        newStatus: String,
+        reason: String
+    ) {
+        if (isWorking) {
+            return
+        }
+
+        isWorking = true
+        message = "Aplicando moderação..."
+
+        coroutineScope.launch {
+            try {
+                adminRepository.updateCoffeeStatus(
+                    coffeeId = coffee.id,
+                    accessToken = authSession.accessToken,
+                    newStatus = newStatus,
+                    reason = reason
+                )
+
+                message = "Status atualizado para $newStatus."
+                onCoffeeModerated()
+            } catch (throwable: Throwable) {
+                message = throwable.message ?: "Não foi possível moderar este café."
+            } finally {
+                isWorking = false
+            }
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CoffeeCard
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Administração",
+                color = CoffeeBrownDark,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Ações rápidas para moderar este café pelo celular.",
+                color = CoffeeMuted,
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    updateStatus(
+                        newStatus = "oculto",
+                        reason = "Ocultado pelo administrador no aplicativo."
+                    )
+                },
+                enabled = !isWorking,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Ocultar café",
+                    fontSize = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = {
+                    updateStatus(
+                        newStatus = "pendente",
+                        reason = "Marcado para revisão pelo administrador no aplicativo."
+                    )
+                },
+                enabled = !isWorking,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Marcar como pendente",
+                    fontSize = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = {
+                    updateStatus(
+                        newStatus = "ativo",
+                        reason = "Reativado pelo administrador no aplicativo."
+                    )
+                },
+                enabled = !isWorking,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Reativar café",
+                    fontSize = 14.sp
+                )
+            }
+
+            if (message.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = message,
+                    color = CoffeeBrown,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            }
+        }
     }
 }
 
