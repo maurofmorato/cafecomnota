@@ -211,8 +211,8 @@ private fun PrivacyCard(
     }
 }
 
-private const val PRIVACY_POLICY_URL = "https://maurofmorato.github.io/cafecomnota/"
-private const val ACCOUNT_DELETION_URL = "https://maurofmorato.github.io/cafecomnota/#exclusao-de-conta"
+private const val PRIVACY_POLICY_URL = "https://maurofmorato.github.io/cafecomnota-privacidade/"
+private const val ACCOUNT_DELETION_URL = "https://maurofmorato.github.io/cafecomnota-privacidade/#exclusao-de-conta"
 
 @Composable
 private fun AuthCard(
