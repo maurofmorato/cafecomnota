@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -109,6 +110,16 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
+        SectionTitle(title = "Privacidade e conta")
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        PrivacyCard(
+            canRequestDeletion = authSession != null
+        )
+
+        Spacer(modifier = Modifier.height(18.dp))
+
         SectionTitle(title = "Idioma")
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -120,18 +131,88 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        SectionTitle(title = "Próximos recursos")
+        SectionTitle(title = "Conta e segurança")
 
         Spacer(modifier = Modifier.height(10.dp))
 
         InfoCard(
             title = "Conta e segurança",
-            text = "Agora a conta já tem troca de senha, recuperação por e-mail e entrada pelo Google, dependendo da configuração do Supabase."
+            text = "Você pode entrar com e-mail e senha ou Google, recuperar a senha por e-mail e manter seus dados atualizados."
         )
 
         Spacer(modifier = Modifier.height(10.dp))
     }
 }
+
+@Composable
+private fun PrivacyCard(
+    canRequestDeletion: Boolean
+) {
+    val uriHandler = LocalUriHandler.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CoffeeCard
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Text(
+                text = "Seus dados",
+                color = CoffeeBrownDark,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Veja como o Café com nota trata seus dados e quais informações ficam associadas à sua conta.",
+                color = CoffeeMuted,
+                fontSize = 13.sp,
+                lineHeight = 17.sp
+            )
+
+            TextButton(
+                onClick = {
+                    uriHandler.openUri(PRIVACY_POLICY_URL)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ler Política de Privacidade")
+            }
+
+            if (canRequestDeletion) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Se desejar encerrar sua conta, você pode solicitar a exclusão dos dados associados a ela.",
+                    color = CoffeeMuted,
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp
+                )
+
+                OutlinedButton(
+                    onClick = {
+                        uriHandler.openUri(ACCOUNT_DELETION_URL)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Solicitar exclusão da conta")
+                }
+            }
+        }
+    }
+}
+
+private const val PRIVACY_POLICY_URL = "https://maurofmorato.github.io/cafecomnota/"
+private const val ACCOUNT_DELETION_URL = "https://maurofmorato.github.io/cafecomnota/#exclusao-de-conta"
 
 @Composable
 private fun AuthCard(
