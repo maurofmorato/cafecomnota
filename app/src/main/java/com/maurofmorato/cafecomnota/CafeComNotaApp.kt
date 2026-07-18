@@ -2,13 +2,19 @@ package com.maurofmorato.cafecomnota
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,7 +49,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun CafeComNotaApp(
     authDeepLink: String? = null,
-    onAuthDeepLinkConsumed: () -> Unit = {}
+    onAuthDeepLinkConsumed: () -> Unit = {},
+    updateReadyToInstall: Boolean = false,
+    onInstallUpdate: () -> Unit = {},
+    onDismissUpdate: () -> Unit = {}
 ) {
     CafeComNotaTheme {
         val context = LocalContext.current
@@ -64,6 +73,10 @@ fun CafeComNotaApp(
 
         var currentDestination by rememberSaveable {
             mutableStateOf(AppDestination.Home.name)
+        }
+
+        val navigationBackStack = remember {
+            mutableStateListOf<String>()
         }
 
         var selectedCoffeeId by rememberSaveable {
@@ -152,6 +165,10 @@ fun CafeComNotaApp(
             newDestination: AppDestination,
             source: String = "app"
         ) {
+            if (newDestination == destination) {
+                return
+            }
+
             CafeAnalytics.logEvent(
                 eventName = AnalyticsEvents.NAVIGATE,
                 params = mapOf(
@@ -164,7 +181,32 @@ fun CafeComNotaApp(
                 )
             )
 
+            if (source == "bottom_bar") {
+                navigationBackStack.clear()
+            } else {
+                navigationBackStack.add(currentDestination)
+            }
+
             currentDestination = newDestination.name
+        }
+
+        fun navigateBack(source: String = "system_back") {
+            val previousDestination = navigationBackStack.removeLastOrNull()
+                ?: AppDestination.Home.name
+
+            CafeAnalytics.logEvent(
+                eventName = AnalyticsEvents.NAVIGATE,
+                params = mapOf(
+                    "from" to destination.analyticsName,
+                    "to" to AppDestination.valueOf(previousDestination).analyticsName,
+                    "source" to source,
+                    "language" to currentLanguage.code,
+                    "data_source" to coffeeDataSource.name,
+                    "logged_in" to (authSession != null)
+                )
+            )
+
+            currentDestination = previousDestination
         }
 
         fun openCoffeeDetail(coffeeId: String) {
@@ -180,7 +222,10 @@ fun CafeComNotaApp(
                 )
             )
 
-            currentDestination = AppDestination.CoffeeDetail.name
+            navigateTo(
+                newDestination = AppDestination.CoffeeDetail,
+                source = "open_coffee"
+            )
         }
 
         fun changeLanguage(language: AppLanguage) {
@@ -328,6 +373,23 @@ fun CafeComNotaApp(
             )
         }
 
+        fun requireLogin(message: String) {
+            loginMessage = message
+            navigateTo(
+                newDestination = AppDestination.Profile,
+                source = "login_required"
+            )
+        }
+
+        fun handleExpiredSession() {
+            authRepository.logout()
+            authSession = null
+            isAdmin = false
+            adminMessage = ""
+            CafeAnalytics.setUserId(null)
+            requireLogin("Sua sessão expirou. Entre novamente para continuar.")
+        }
+
         fun doGoogleLogin() {
             try {
                 val intent = Intent(
@@ -462,7 +524,7 @@ fun CafeComNotaApp(
         }
 
         fun afterReviewSaved() {
-            currentDestination = AppDestination.CoffeeDetail.name
+            navigateBack(source = "review_saved")
             reloadCoffees(source = "review_saved")
         }
 
@@ -472,7 +534,7 @@ fun CafeComNotaApp(
         }
 
         fun afterCoffeeCreated() {
-            currentDestination = AppDestination.Home.name
+            navigateBack(source = "coffee_created")
             reloadCoffees(source = "coffee_created")
         }
 
@@ -480,6 +542,19 @@ fun CafeComNotaApp(
             val deepLink = authDeepLink
 
             if (!deepLink.isNullOrBlank()) {
+                val uri = Uri.parse(deepLink)
+
+                if (uri.host == "coffee") {
+                    uri.pathSegments.firstOrNull()?.let { coffeeId ->
+                        selectedCoffeeId = coffeeId
+                        navigationBackStack.clear()
+                        currentDestination = AppDestination.CoffeeDetail.name
+                    }
+
+                    onAuthDeepLinkConsumed()
+                    return@LaunchedEffect
+                }
+
                 isLoggingIn = true
                 loginMessage = "Recebendo retorno de autenticação..."
 
@@ -566,6 +641,30 @@ fun CafeComNotaApp(
 
         LaunchedEffect(destination, currentLanguage) {
             CafeAnalytics.logScreen("${destination.analyticsName}_${currentLanguage.code}")
+        }
+
+        BackHandler(enabled = destination != AppDestination.Home) {
+            navigateBack()
+        }
+
+        if (updateReadyToInstall) {
+            AlertDialog(
+                onDismissRequest = onDismissUpdate,
+                title = { Text("Atualização pronta") },
+                text = {
+                    Text("Uma nova versão do Café com nota foi baixada. Reinicie agora para usar as melhorias.")
+                },
+                confirmButton = {
+                    Button(onClick = onInstallUpdate) {
+                        Text("Atualizar agora")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismissUpdate) {
+                        Text("Depois")
+                    }
+                }
+            )
         }
 
         Surface(
@@ -665,27 +764,28 @@ fun CafeComNotaApp(
                         authSession = authSession,
                         isAdmin = isAdmin,
                         onBack = {
-                            navigateTo(
-                                newDestination = AppDestination.Home,
-                                source = "coffee_detail_back"
-                            )
+                            navigateBack(source = "coffee_detail_back")
                         },
                         onReview = {
-                            CafeAnalytics.logEvent(
-                                eventName = AnalyticsEvents.START_REVIEW,
-                                params = mapOf(
-                                    "coffee_id" to selectedCoffee.id,
-                                    "coffee_name" to selectedCoffee.name,
-                                    "language" to currentLanguage.code,
-                                    "data_source" to coffeeDataSource.name,
-                                    "logged_in" to (authSession != null)
+                            if (authSession == null) {
+                                requireLogin("Entre para dar sua nota a este café.")
+                            } else {
+                                CafeAnalytics.logEvent(
+                                    eventName = AnalyticsEvents.START_REVIEW,
+                                    params = mapOf(
+                                        "coffee_id" to selectedCoffee.id,
+                                        "coffee_name" to selectedCoffee.name,
+                                        "language" to currentLanguage.code,
+                                        "data_source" to coffeeDataSource.name,
+                                        "logged_in" to true
+                                    )
                                 )
-                            )
 
-                            navigateTo(
-                                newDestination = AppDestination.ReviewCoffee,
-                                source = "coffee_detail"
-                            )
+                                navigateTo(
+                                    newDestination = AppDestination.ReviewCoffee,
+                                    source = "coffee_detail"
+                                )
+                            }
                         },
                         onCoffeeModerated = ::afterCoffeeModerated
                     )
@@ -697,12 +797,16 @@ fun CafeComNotaApp(
                         coffeeName = selectedCoffee.name,
                         authSession = authSession,
                         onBack = {
-                            navigateTo(
-                                newDestination = AppDestination.CoffeeDetail,
-                                source = "review_back"
-                            )
+                            navigateBack(source = "review_back")
                         },
-                        onSaved = ::afterReviewSaved
+                        onSaved = ::afterReviewSaved,
+                        onRequireLogin = {
+                            if (authSession == null) {
+                                requireLogin("Entre para salvar sua avaliação.")
+                            } else {
+                                handleExpiredSession()
+                            }
+                        }
                     )
 
                     AppDestination.AddCoffee -> AddCoffeeScreen(
@@ -711,12 +815,16 @@ fun CafeComNotaApp(
                         authSession = authSession,
                         isAdmin = isAdmin,
                         onBack = {
-                            navigateTo(
-                                newDestination = AppDestination.Home,
-                                source = "add_coffee_back"
-                            )
+                            navigateBack(source = "add_coffee_back")
                         },
-                        onSaved = ::afterCoffeeCreated
+                        onSaved = ::afterCoffeeCreated,
+                        onRequireLogin = { message ->
+                            if (authSession == null) {
+                                requireLogin(message)
+                            } else {
+                                handleExpiredSession()
+                            }
+                        }
                     )
                 }
             }

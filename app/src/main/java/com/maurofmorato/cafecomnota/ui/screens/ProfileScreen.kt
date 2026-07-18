@@ -38,6 +38,7 @@ import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppLanguage
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
@@ -69,14 +70,15 @@ fun ProfileScreen(
     CafeResponsiveContent(
         innerPadding = innerPadding
     ) {
-        CafeHeader(
+        SubScreenHero(
             strings = strings,
-            compact = true
+            title = "Perfil",
+            subtitle = if (authSession == null) {
+                "Entre para avaliar cafés, cadastrar novidades e manter seus dados sincronizados."
+            } else {
+                "Gerencie sua conta, privacidade, segurança e preferências."
+            }
         )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        SectionTitle(title = "Perfil")
 
         Spacer(modifier = Modifier.height(10.dp))
 

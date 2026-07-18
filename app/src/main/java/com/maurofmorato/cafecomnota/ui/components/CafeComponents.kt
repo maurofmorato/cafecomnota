@@ -3,12 +3,14 @@ package com.maurofmorato.cafecomnota.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -31,12 +34,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
+import com.maurofmorato.cafecomnota.R
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -215,6 +222,93 @@ fun CafeHeader(
 }
 
 @Composable
+fun SubScreenHero(
+    strings: AppStrings,
+    title: String,
+    subtitle: String? = null,
+    onBack: (() -> Unit)? = null,
+    trailingAction: (@Composable () -> Unit)? = null
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, CoffeeGold.copy(alpha = 0.22f), RoundedCornerShape(26.dp)),
+        shape = RoundedCornerShape(26.dp),
+        colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = strings.commonBack,
+                            tint = CoffeeBrown
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CafeHeader(strings = strings, compact = true)
+                }
+
+                if (trailingAction != null) {
+                    trailingAction()
+                } else if (onBack != null) {
+                    Spacer(modifier = Modifier.size(48.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.LocalCafe,
+                    contentDescription = null,
+                    tint = CoffeeBrown,
+                    modifier = Modifier.size(28.dp)
+                )
+
+                Spacer(modifier = Modifier.width(9.dp))
+
+                Text(
+                    text = title,
+                    color = CoffeeBrownDark,
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 25.sp,
+                    lineHeight = 29.sp
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier
+                    .padding(start = 37.dp, top = 7.dp)
+                    .fillMaxWidth(),
+                color = CoffeeGold
+            )
+
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(9.dp))
+                Text(
+                    text = subtitle,
+                    color = CoffeeMuted,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun MainActionCard(
     iconType: ActionIcon,
     title: String,
@@ -227,7 +321,7 @@ fun MainActionCard(
             .clickable {
                 onClick()
             },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(
             containerColor = CoffeeCard
         ),
@@ -238,41 +332,12 @@ fun MainActionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(CoffeeBrown),
-                contentAlignment = Alignment.Center
-            ) {
-                when (iconType) {
-                    ActionIcon.Ranking -> Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = null,
-                        tint = CoffeeGold,
-                        modifier = Modifier.size(24.dp)
-                    )
+            ActionArtwork(iconType)
 
-                    ActionIcon.Review -> Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = null,
-                        tint = CoffeeGold,
-                        modifier = Modifier.size(24.dp)
-                    )
-
-                    ActionIcon.AddCoffee -> Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        tint = CoffeeGold,
-                        modifier = Modifier.size(27.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(13.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -306,6 +371,52 @@ fun MainActionCard(
                 contentDescription = null,
                 tint = CoffeeGold,
                 modifier = Modifier.size(25.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionArtwork(iconType: ActionIcon) {
+    val illustration = when (iconType) {
+        ActionIcon.Ranking -> R.drawable.action_ranking_coffee_bags
+        ActionIcon.Review -> R.drawable.action_review_coffee
+        ActionIcon.AddCoffee -> R.drawable.action_add_coffee
+    }
+
+    val secondaryIcon = when (iconType) {
+        ActionIcon.Ranking -> Icons.Default.LocalCafe
+        ActionIcon.Review -> Icons.Default.Star
+        ActionIcon.AddCoffee -> Icons.Default.Sell
+    }
+
+    Box(
+        modifier = Modifier
+            .size(82.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(CoffeeGold.copy(alpha = 0.18f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(illustration),
+            contentDescription = null,
+            modifier = Modifier.size(82.dp),
+            contentScale = ContentScale.Crop
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = secondaryIcon,
+                contentDescription = null,
+                tint = CoffeeBrown,
+                modifier = Modifier.size(17.dp)
             )
         }
     }

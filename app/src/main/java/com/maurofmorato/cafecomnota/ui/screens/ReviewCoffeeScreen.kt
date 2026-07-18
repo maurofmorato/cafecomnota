@@ -42,11 +42,13 @@ import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
+import com.maurofmorato.cafecomnota.data.auth.AuthenticationExpiredException
 import com.maurofmorato.cafecomnota.data.review.ReviewSaveRequest
 import com.maurofmorato.cafecomnota.data.review.SupabaseReviewRepository
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.components.formatRating
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -74,7 +76,8 @@ fun ReviewCoffeeScreen(
     coffeeName: String,
     authSession: AuthSession?,
     onBack: () -> Unit,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    onRequireLogin: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val reviewRepository = remember { SupabaseReviewRepository() }
@@ -131,6 +134,8 @@ fun ReviewCoffeeScreen(
             } else {
                 message = ""
             }
+        } catch (throwable: AuthenticationExpiredException) {
+            onRequireLogin()
         } catch (throwable: Throwable) {
             CafeAnalytics.recordNonFatal(
                 throwable = throwable,
@@ -152,14 +157,13 @@ fun ReviewCoffeeScreen(
     val pricePerKg = calculatePricePerKg(pricePaid, weightGrams)
 
     CafeResponsiveContent(innerPadding = innerPadding) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.Default.ArrowBack, contentDescription = strings.commonBack, tint = CoffeeBrown)
-        }
+        SubScreenHero(
+            strings = strings,
+            title = "Dar nota",
+            subtitle = "Conte como foi sua experiência e ajude outras pessoas a escolher.",
+            onBack = onBack
+        )
 
-        CafeHeader(strings = strings, compact = true)
-
-        Spacer(modifier = Modifier.height(18.dp))
-        SectionTitle(title = "Dar nota")
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
@@ -173,7 +177,7 @@ fun ReviewCoffeeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         if (authSession == null) {
-            LoginRequiredCard()
+            LoginRequiredCard(onOpenProfile = onRequireLogin)
             Spacer(modifier = Modifier.height(14.dp))
         }
 
@@ -326,7 +330,7 @@ fun ReviewCoffeeScreen(
         Button(
             onClick = {
                 if (authSession == null) {
-                    message = "Entre na conta pelo Perfil antes de salvar."
+                    onRequireLogin()
                     return@Button
                 }
 
@@ -390,6 +394,8 @@ fun ReviewCoffeeScreen(
 
                         message = "Avaliação salva com sucesso."
                         onSaved()
+                    } catch (throwable: AuthenticationExpiredException) {
+                        onRequireLogin()
                     } catch (throwable: Throwable) {
                         CafeAnalytics.recordNonFatal(
                             throwable = throwable,
@@ -435,7 +441,9 @@ fun ReviewCoffeeScreen(
 }
 
 @Composable
-private fun LoginRequiredCard() {
+private fun LoginRequiredCard(
+    onOpenProfile: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -462,6 +470,12 @@ private fun LoginRequiredCard() {
                     style = BodyTextStyle,
                     lineHeight = 17.sp
                 )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(onClick = onOpenProfile) {
+                    Text("Ir para Perfil")
+                }
             }
         }
     }

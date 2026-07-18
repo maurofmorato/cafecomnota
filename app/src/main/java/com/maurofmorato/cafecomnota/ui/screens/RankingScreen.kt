@@ -21,6 +21,7 @@ import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.model.bestValueCoffees
@@ -58,14 +59,11 @@ fun RankingScreen(
     CafeResponsiveContent(
         innerPadding = innerPadding
     ) {
-        CafeHeader(
+        SubScreenHero(
             strings = strings,
-            compact = true
+            title = strings.rankingTitle,
+            subtitle = "Compare notas, avaliações e custo-benefício da comunidade."
         )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        SectionTitle(title = strings.rankingTitle)
 
         Spacer(modifier = Modifier.height(10.dp))
 

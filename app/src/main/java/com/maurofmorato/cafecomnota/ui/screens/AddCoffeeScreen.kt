@@ -1,5 +1,10 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.Save
@@ -30,17 +36,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
+import com.maurofmorato.cafecomnota.data.auth.AuthenticationExpiredException
 import com.maurofmorato.cafecomnota.data.coffee.CoffeeCreateRequest
 import com.maurofmorato.cafecomnota.data.coffee.SupabaseCoffeeWriteRepository
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrownDark
@@ -49,7 +58,11 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeGold
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeLine
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeText
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.Normalizer
 
 @Composable
@@ -59,8 +72,10 @@ fun AddCoffeeScreen(
     authSession: AuthSession?,
     isAdmin: Boolean,
     onBack: () -> Unit,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    onRequireLogin: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val coffeeWriteRepository = remember {
         SupabaseCoffeeWriteRepository()
@@ -72,20 +87,62 @@ fun AddCoffeeScreen(
     var roast by remember { mutableStateOf("media") }
     var standardWeightText by remember { mutableStateOf("250") }
     var isSaving by remember { mutableStateOf(false) }
+    var isReadingLabel by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
+    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var lastSuggestion by remember { mutableStateOf<CoffeeLabelSuggestion?>(null) }
+
+    val labelCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        val photoUri = pendingPhotoUri
+
+        if (!success || photoUri == null) {
+            message = "Não foi possível obter a foto. Tente novamente."
+            return@rememberLauncherForActivityResult
+        }
+
+        isReadingLabel = true
+        message = "Lendo o rótulo..."
+
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        recognizer.process(InputImage.fromFilePath(context, photoUri))
+            .addOnSuccessListener { result ->
+                val suggestion = coffeeLabelSuggestion(result.text)
+                lastSuggestion = suggestion
+
+                if (suggestion.name.isNotBlank()) coffeeName = suggestion.name
+                if (suggestion.brand.isNotBlank()) brand = suggestion.brand
+                suggestion.weightGrams?.let { standardWeightText = it.toString() }
+                suggestion.type?.let { type = it }
+                suggestion.roast?.let { roast = it }
+
+                message = if (result.text.isBlank()) {
+                    "Não identifiquei texto suficiente. Preencha os campos manualmente."
+                } else {
+                    "Sugestões preenchidas. Confira cada campo antes de salvar."
+                }
+            }
+            .addOnFailureListener {
+                message = "Não consegui ler este rótulo. Tente uma foto mais nítida."
+            }
+            .addOnCompleteListener {
+                recognizer.close()
+                isReadingLabel = false
+            }
+    }
 
     val normalizedName = normalizeForSearch(coffeeName)
     val statusToSave = if (isAdmin) "ativo" else "pendente"
 
     CafeResponsiveContent(innerPadding = innerPadding) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.Default.ArrowBack, contentDescription = strings.commonBack, tint = CoffeeBrown)
-        }
+        SubScreenHero(
+            strings = strings,
+            title = "Cadastrar café",
+            subtitle = "Fotografe o rótulo ou preencha os dados; você sempre confirma antes de enviar.",
+            onBack = onBack
+        )
 
-        CafeHeader(strings = strings, compact = true)
-
-        Spacer(modifier = Modifier.height(18.dp))
-        SectionTitle(title = "Cadastrar café")
         Spacer(modifier = Modifier.height(12.dp))
 
         if (authSession == null) {
@@ -111,11 +168,84 @@ fun AddCoffeeScreen(
                         fontSize = 14.sp,
                         lineHeight = 18.sp
                     )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(onClick = { onRequireLogin("Entre para cadastrar um novo café.") }) {
+                        Text("Ir para Perfil")
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
         }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = CoffeeBrown)
+                    Column {
+                        Text(
+                            text = "Ler rótulo pela câmera",
+                            color = CoffeeBrownDark,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "A foto é analisada apenas no aparelho para sugerir nome, marca e peso.",
+                            color = CoffeeMuted,
+                            fontSize = 13.sp,
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = {
+                        val photoUri = createLabelPhotoUri(context)
+                        pendingPhotoUri = photoUri
+                        labelCameraLauncher.launch(photoUri)
+                    },
+                    enabled = !isReadingLabel,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null)
+                    Text(
+                        text = if (isReadingLabel) "Lendo rótulo..." else "Fotografar rótulo",
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+
+                lastSuggestion?.let { suggestion ->
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = suggestion.summary(),
+                        color = CoffeeBrown,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "A câmera sugere; você confirma. Corrija qualquer campo que não corresponda ao pacote.",
+                        color = CoffeeMuted,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -304,7 +434,7 @@ fun AddCoffeeScreen(
                 val session = authSession
 
                 if (session == null) {
-                    message = "Entre na conta pelo Perfil antes de cadastrar café."
+                    onRequireLogin("Entre para cadastrar um novo café.")
                     return@Button
                 }
 
@@ -376,6 +506,8 @@ fun AddCoffeeScreen(
                         }
 
                         onSaved()
+                    } catch (throwable: AuthenticationExpiredException) {
+                        onRequireLogin(throwable.message ?: "Sua sessão expirou. Entre novamente para continuar.")
                     } catch (throwable: Throwable) {
                         CafeAnalytics.recordNonFatal(
                             throwable = throwable,
@@ -460,4 +592,128 @@ private fun normalizeForSearch(value: String): String {
         .replace(Regex("[^a-z0-9]+"), " ")
         .trim()
         .replace(Regex("\\s+"), " ")
+}
+
+private data class CoffeeLabelSuggestion(
+    val name: String,
+    val brand: String,
+    val weightGrams: Int?,
+    val type: String?,
+    val roast: String?
+) {
+    fun summary(): String {
+        val detected = buildList {
+            if (name.isNotBlank()) add("nome: $name")
+            if (brand.isNotBlank()) add("marca: $brand")
+            weightGrams?.let { add("peso: ${it}g") }
+            type?.let { add("tipo: ${if (it == "grao") "grãos" else if (it == "moido") "moído" else "cápsula"}") }
+            roast?.let { add("torra: ${if (it == "media") "média" else "escura"}") }
+        }
+
+        return if (detected.isEmpty()) "Nenhum campo reconhecido com segurança." else "Detectado — ${detected.joinToString(" • ")}"
+    }
+}
+
+private fun coffeeLabelSuggestion(text: String): CoffeeLabelSuggestion {
+    val cleanLines = text.lines()
+        .map(::cleanOcrLine)
+        .filter { it.length >= 3 }
+        .distinctBy(::normalizeForSearch)
+
+    val normalizedText = normalizeForSearch(text)
+
+    val weightInGrams = Regex("\\b(\\d{2,4})\\s?(g|gr|gramas)\\b", RegexOption.IGNORE_CASE)
+        .find(text)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+        ?.takeIf { it in 20..5000 }
+
+    val weightInKg = Regex("\\b(\\d(?:[.,]\\d{1,3})?)\\s?kg\\b", RegexOption.IGNORE_CASE)
+        .find(text)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.replace(',', '.')
+        ?.toDoubleOrNull()
+        ?.times(1000)
+        ?.toInt()
+        ?.takeIf { it in 20..5000 }
+
+    val type = when {
+        Regex("\\b(capsula|capsulas)\\b").containsMatchIn(normalizedText) -> "capsula"
+        Regex("\\b(grao|graos)\\b").containsMatchIn(normalizedText) -> "grao"
+        Regex("\\b(moido|moida)\\b").containsMatchIn(normalizedText) -> "moido"
+        else -> null
+    }
+
+    val roast = when {
+        Regex("\\b(torra )?(escura|forte|extraforte|extra forte)\\b").containsMatchIn(normalizedText) -> "escura"
+        Regex("\\b(torra )?(media|medio)\\b").containsMatchIn(normalizedText) -> "media"
+        else -> null
+    }
+
+    val ignoredTerms = listOf(
+        "informacao nutricional", "validade", "lote", "sac", "industria", "fabricado",
+        "cafe torrado", "torrado em grao", "torrado e moido", "100 arabica", "peso liquido",
+        "especial de verdade", "notas de", "torra media", "torra escura"
+    )
+
+    val titleCandidates = cleanLines.filter { line ->
+        val normalized = normalizeForSearch(line)
+        line.length in 3..42 &&
+            ignoredTerms.none(normalized::contains) &&
+            !normalized.matches(Regex(".*\\b\\d{2,4}\\s*(g|gr|gramas|kg)\\b.*"))
+    }
+
+    val descriptorWords = listOf(
+        "bourbon", "intenso", "extra forte", "tradicional", "gourmet", "especial", "espresso", "premium"
+    )
+    val coffeeLineIndex = titleCandidates.indexOfFirst { line ->
+        normalizeForSearch(line).contains("cafe")
+    }
+    val coffeeLine = titleCandidates.getOrNull(coffeeLineIndex).orEmpty()
+    val lineAfterCoffee = titleCandidates.getOrNull(coffeeLineIndex + 1).orEmpty()
+    val brand = when {
+        normalizeForSearch(coffeeLine) == "cafe" &&
+            lineAfterCoffee.isNotBlank() &&
+            descriptorWords.none(normalizeForSearch(lineAfterCoffee)::contains) -> "$coffeeLine $lineAfterCoffee"
+        coffeeLine.isNotBlank() -> coffeeLine
+        else -> titleCandidates.firstOrNull().orEmpty()
+    }
+
+    val descriptor = titleCandidates.firstOrNull { line ->
+        val normalized = normalizeForSearch(line)
+        line != brand && descriptorWords.any(normalized::contains)
+    }.orEmpty()
+
+    val name = when {
+        brand.isBlank() -> descriptor
+        descriptor.isBlank() -> brand
+        normalizeForSearch(brand).contains(normalizeForSearch(descriptor)) -> brand
+        else -> "$brand $descriptor"
+    }
+
+    return CoffeeLabelSuggestion(
+        name = name,
+        brand = brand,
+        weightGrams = weightInGrams ?: weightInKg,
+        type = type,
+        roast = roast
+    )
+}
+
+private fun cleanOcrLine(value: String): String = value
+    .replace(Regex("[^\\p{L}\\p{N}%+.,'& -]"), " ")
+    .replace(Regex("\\s+"), " ")
+    .trim(' ', '-', '.', ',')
+
+private fun createLabelPhotoUri(context: Context): Uri {
+    val photoDirectory = File(context.cacheDir, "label_photos").apply { mkdirs() }
+    val photoFile = File.createTempFile("coffee_label_", ".jpg", photoDirectory)
+
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        photoFile
+    )
 }

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalCafe
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
@@ -47,6 +48,7 @@ import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.components.formatPrice250g
 import com.maurofmorato.cafecomnota.ui.components.formatPriceKg
 import com.maurofmorato.cafecomnota.ui.components.formatRating
@@ -72,25 +74,28 @@ fun CoffeeDetailScreen(
     onReview: () -> Unit,
     onCoffeeModerated: () -> Unit
 ) {
+    var showShareDialog by remember { mutableStateOf(false) }
+
     CafeResponsiveContent(
         innerPadding = innerPadding
     ) {
-        IconButton(
-            onClick = onBack
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = strings.commonBack,
-                tint = CoffeeBrown
-            )
-        }
-
-        CafeHeader(
+        SubScreenHero(
             strings = strings,
-            compact = true
+            title = "Detalhes do café",
+            subtitle = "Informações, avaliações e perfil percebido pela comunidade.",
+            onBack = onBack,
+            trailingAction = {
+                IconButton(onClick = { showShareDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.QrCode2,
+                    contentDescription = "Compartilhar café por QR Code",
+                    tint = CoffeeBrown
+                )
+            }
+            }
         )
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         CoffeeMainCard(
             strings = strings,
@@ -227,6 +232,14 @@ fun CoffeeDetailScreen(
         }
 
         Spacer(modifier = Modifier.height(10.dp))
+    }
+
+    if (showShareDialog) {
+        CoffeeShareDialog(
+            coffeeId = coffee.id,
+            coffeeName = coffee.name,
+            onDismiss = { showShareDialog = false }
+        )
     }
 }
 

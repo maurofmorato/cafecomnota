@@ -27,6 +27,7 @@ import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.CoffeeRankingItem
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
+import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
@@ -94,14 +95,11 @@ fun SearchScreen(
     CafeResponsiveContent(
         innerPadding = innerPadding
     ) {
-        CafeHeader(
+        SubScreenHero(
             strings = strings,
-            compact = true
+            title = strings.searchScreenTitle,
+            subtitle = "Encontre cafés por nome, marca, tipo ou torrefação."
         )
-
-        Spacer(modifier = Modifier.height(22.dp))
-
-        SectionTitle(title = strings.searchScreenTitle)
 
         Spacer(modifier = Modifier.height(12.dp))
 
