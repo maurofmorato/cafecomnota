@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -24,13 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
-import com.maurofmorato.cafecomnota.data.repository.CoffeeDataSource
 import com.maurofmorato.cafecomnota.ui.components.ActionIcon
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
@@ -54,11 +54,12 @@ fun HomeScreen(
     innerPadding: PaddingValues,
     strings: AppStrings,
     coffees: List<CoffeeUiModel>,
-    dataSource: CoffeeDataSource,
     onNavigate: (AppDestination) -> Unit,
     onSearch: (String) -> Unit,
     onOpenCoffee: (String) -> Unit
 ) {
+    val showAppShareDialog = remember { mutableStateOf(false) }
+
     CafeResponsiveContent(
         innerPadding = innerPadding,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -67,7 +68,9 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        DataSourceChip(dataSource = dataSource)
+        VersionShareRow(
+            onShowQrCode = { showAppShareDialog.value = true }
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -182,50 +185,64 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
     }
+
+    if (showAppShareDialog.value) {
+        AppShareDialog(
+            onDismiss = { showAppShareDialog.value = false }
+        )
+    }
 }
 
 @Composable
-private fun DataSourceChip(
-    dataSource: CoffeeDataSource
+private fun VersionShareRow(
+    onShowQrCode: () -> Unit
 ) {
-    val text = when (dataSource) {
-        CoffeeDataSource.Supabase -> "Dados do Supabase"
-        CoffeeDataSource.LocalFallback -> "Dados locais de teste"
-    }
-
-    val icon = when (dataSource) {
-        CoffeeDataSource.Supabase -> Icons.Default.CloudDone
-        CoffeeDataSource.LocalFallback -> Icons.Default.CloudOff
+    val context = LocalContext.current
+    val versionName = remember(context) {
+        @Suppress("DEPRECATION")
+        context.packageManager
+            .getPackageInfo(context.packageName, 0)
+            .versionName
+            .orEmpty()
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                color = CoffeeCard,
-                shape = RoundedCornerShape(50)
-            )
-            .height(30.dp),
+            .height(40.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = CoffeeBrown
-        )
-
-        Spacer(modifier = Modifier.width(6.dp))
-
-        Text(
-            text = text,
-            color = CoffeeMuted,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        Row(
             modifier = Modifier
-        )
+                .weight(1f)
+                .background(
+                    color = CoffeeCard,
+                    shape = RoundedCornerShape(50)
+                )
+                .height(32.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Versão $versionName",
+                color = CoffeeMuted,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        IconButton(onClick = onShowQrCode) {
+            Icon(
+                imageVector = Icons.Default.QrCode2,
+                contentDescription = "Compartilhar Café com nota por QR Code",
+                tint = CoffeeBrown
+            )
+        }
     }
 }
 

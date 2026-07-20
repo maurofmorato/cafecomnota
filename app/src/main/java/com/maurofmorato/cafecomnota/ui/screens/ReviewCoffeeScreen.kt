@@ -32,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.TextStyle
@@ -82,15 +83,15 @@ fun ReviewCoffeeScreen(
     val coroutineScope = rememberCoroutineScope()
     val reviewRepository = remember { SupabaseReviewRepository() }
 
-    var rating by remember { mutableFloatStateOf(4.0f) }
-    var wouldBuyAgain by remember { mutableStateOf(true) }
-    var priceText by remember { mutableStateOf("") }
-    var weightText by remember { mutableStateOf("250") }
-    var brewMethod by remember { mutableStateOf("nao_informado") }
-    var comment by remember { mutableStateOf("") }
+    var rating by rememberSaveable { mutableFloatStateOf(4.0f) }
+    var wouldBuyAgain by rememberSaveable { mutableStateOf(true) }
+    var priceText by rememberSaveable { mutableStateOf("") }
+    var weightText by rememberSaveable { mutableStateOf("250") }
+    var brewMethod by rememberSaveable { mutableStateOf("nao_informado") }
+    var comment by rememberSaveable { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
     var isLoadingExisting by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(coffeeId, authSession?.userId) {
         val session = authSession

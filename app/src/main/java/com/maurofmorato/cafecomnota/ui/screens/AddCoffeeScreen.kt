@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +52,7 @@ import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
+import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrownDark
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeCard
@@ -71,8 +73,10 @@ fun AddCoffeeScreen(
     strings: AppStrings,
     authSession: AuthSession?,
     isAdmin: Boolean,
+    existingCoffees: List<CoffeeUiModel>,
     onBack: () -> Unit,
     onSaved: () -> Unit,
+    onOpenExistingCoffee: (String) -> Unit,
     onRequireLogin: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -81,14 +85,14 @@ fun AddCoffeeScreen(
         SupabaseCoffeeWriteRepository()
     }
 
-    var coffeeName by remember { mutableStateOf("") }
-    var brand by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf("moido") }
-    var roast by remember { mutableStateOf("media") }
-    var standardWeightText by remember { mutableStateOf("250") }
+    var coffeeName by rememberSaveable { mutableStateOf("") }
+    var brand by rememberSaveable { mutableStateOf("") }
+    var type by rememberSaveable { mutableStateOf("moido") }
+    var roast by rememberSaveable { mutableStateOf("media") }
+    var standardWeightText by rememberSaveable { mutableStateOf("250") }
     var isSaving by remember { mutableStateOf(false) }
     var isReadingLabel by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf("") }
     var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var lastSuggestion by remember { mutableStateOf<CoffeeLabelSuggestion?>(null) }
 
@@ -134,6 +138,13 @@ fun AddCoffeeScreen(
 
     val normalizedName = normalizeForSearch(coffeeName)
     val statusToSave = if (isAdmin) "ativo" else "pendente"
+    val possibleDuplicate = remember(coffeeName, brand, existingCoffees) {
+        findPotentialDuplicate(
+            coffeeName = coffeeName,
+            brand = brand,
+            existingCoffees = existingCoffees
+        )
+    }
 
     CafeResponsiveContent(innerPadding = innerPadding) {
         SubScreenHero(
@@ -197,7 +208,7 @@ fun AddCoffeeScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "A foto é analisada apenas no aparelho para sugerir nome, marca e peso.",
+                            text = "Centralize a frente do pacote. A foto é analisada no aparelho para sugerir nome, marca, peso, tipo e torra.",
                             color = CoffeeMuted,
                             fontSize = 13.sp,
                             lineHeight = 17.sp
@@ -289,6 +300,45 @@ fun AddCoffeeScreen(
                         cursorColor = CoffeeBrown
                     )
                 )
+
+                if (possibleDuplicate != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = CoffeeGold.copy(alpha = 0.13f)
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Text(
+                                text = "Encontramos um café parecido",
+                                color = CoffeeBrownDark,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = "${possibleDuplicate.name} • ${possibleDuplicate.brand}",
+                                color = CoffeeMuted,
+                                fontSize = 13.sp,
+                                lineHeight = 17.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Button(
+                                onClick = { onOpenExistingCoffee(possibleDuplicate.id) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Ver café existente")
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -592,6 +642,33 @@ private fun normalizeForSearch(value: String): String {
         .replace(Regex("[^a-z0-9]+"), " ")
         .trim()
         .replace(Regex("\\s+"), " ")
+}
+
+private fun findPotentialDuplicate(
+    coffeeName: String,
+    brand: String,
+    existingCoffees: List<CoffeeUiModel>
+): CoffeeUiModel? {
+    val normalizedName = normalizeForSearch(coffeeName)
+    val normalizedBrand = normalizeForSearch(brand)
+
+    if (normalizedName.length < 4 && normalizedBrand.length < 3) {
+        return null
+    }
+
+    return existingCoffees.firstOrNull { coffee ->
+        val existingName = normalizeForSearch(coffee.name)
+        val existingBrand = normalizeForSearch(coffee.brand)
+        val sameName = normalizedName.length >= 4 &&
+            (existingName == normalizedName || existingName.contains(normalizedName) || normalizedName.contains(existingName))
+        val sameBrandAndCloseName = normalizedBrand.length >= 3 &&
+            existingBrand == normalizedBrand &&
+            normalizedName.split(' ').filter { it.length >= 4 }.any { word ->
+                existingName.contains(word)
+            }
+
+        sameName || sameBrandAndCloseName
+    }
 }
 
 private data class CoffeeLabelSuggestion(

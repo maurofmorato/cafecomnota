@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -70,6 +71,7 @@ fun CafeComNotaApp(
         }
 
         val coroutineScope = rememberCoroutineScope()
+        val saveableStateHolder = rememberSaveableStateHolder()
 
         var currentDestination by rememberSaveable {
             mutableStateOf(AppDestination.Home.name)
@@ -109,6 +111,14 @@ fun CafeComNotaApp(
 
         var loginMessage by remember {
             mutableStateOf("")
+        }
+
+        var pendingLoginDestinationName by rememberSaveable {
+            mutableStateOf<String?>(null)
+        }
+
+        var showLoginRequiredDialog by rememberSaveable {
+            mutableStateOf(false)
         }
 
         var isAdmin by remember {
@@ -207,6 +217,17 @@ fun CafeComNotaApp(
             )
 
             currentDestination = previousDestination
+        }
+
+        fun resumePendingActionAfterLogin() {
+            val pendingDestination = pendingLoginDestinationName ?: return
+
+            if (navigationBackStack.lastOrNull() == pendingDestination) {
+                navigationBackStack.removeLastOrNull()
+            }
+
+            pendingLoginDestinationName = null
+            currentDestination = pendingDestination
         }
 
         fun openCoffeeDetail(coffeeId: String) {
@@ -333,6 +354,7 @@ fun CafeComNotaApp(
                     )
 
                     loginMessage = "Login realizado com sucesso."
+                    resumePendingActionAfterLogin()
                 } catch (throwable: Throwable) {
                     CafeAnalytics.recordNonFatal(
                         throwable = throwable,
@@ -373,21 +395,25 @@ fun CafeComNotaApp(
             )
         }
 
-        fun requireLogin(message: String) {
+        fun requireLogin(
+            message: String,
+            continueTo: AppDestination
+        ) {
             loginMessage = message
-            navigateTo(
-                newDestination = AppDestination.Profile,
-                source = "login_required"
-            )
+            pendingLoginDestinationName = continueTo.name
+            showLoginRequiredDialog = true
         }
 
-        fun handleExpiredSession() {
+        fun handleExpiredSession(continueTo: AppDestination) {
             authRepository.logout()
             authSession = null
             isAdmin = false
             adminMessage = ""
             CafeAnalytics.setUserId(null)
-            requireLogin("Sua sessão expirou. Entre novamente para continuar.")
+            requireLogin(
+                message = "Sua sessão expirou. Entre novamente para continuar. Os dados preenchidos serão preservados.",
+                continueTo = continueTo
+            )
         }
 
         fun doGoogleLogin() {
@@ -524,6 +550,7 @@ fun CafeComNotaApp(
         }
 
         fun afterReviewSaved() {
+            saveableStateHolder.removeState("${AppDestination.ReviewCoffee.name}:$selectedCoffeeId")
             navigateBack(source = "review_saved")
             reloadCoffees(source = "review_saved")
         }
@@ -534,6 +561,7 @@ fun CafeComNotaApp(
         }
 
         fun afterCoffeeCreated() {
+            saveableStateHolder.removeState(AppDestination.AddCoffee.name)
             navigateBack(source = "coffee_created")
             reloadCoffees(source = "coffee_created")
         }
@@ -569,6 +597,10 @@ fun CafeComNotaApp(
                         "Link de recuperação recebido. Informe sua nova senha abaixo."
                     } else {
                         "Login realizado com sucesso."
+                    }
+
+                    if (!deepLink.contains("reset-password")) {
+                        resumePendingActionAfterLogin()
                     }
 
                     CafeAnalytics.logEvent(
@@ -667,6 +699,45 @@ fun CafeComNotaApp(
             )
         }
 
+        if (showLoginRequiredDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showLoginRequiredDialog = false
+                    pendingLoginDestinationName = null
+                },
+                title = { Text("Entre para continuar") },
+                text = {
+                    Text(
+                        "Para cadastrar cafés e publicar avaliações, você precisa entrar na sua conta. " +
+                            "Depois do login, voltaremos automaticamente para o que você estava fazendo."
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showLoginRequiredDialog = false
+                            navigateTo(
+                                newDestination = AppDestination.Profile,
+                                source = "login_required"
+                            )
+                        }
+                    ) {
+                        Text("Entrar agora")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showLoginRequiredDialog = false
+                            pendingLoginDestinationName = null
+                        }
+                    ) {
+                        Text("Agora não")
+                    }
+                }
+            )
+        }
+
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = CoffeeCream
@@ -692,17 +763,40 @@ fun CafeComNotaApp(
                     }
                 }
             ) { innerPadding ->
-                when (destination) {
+                val destinationStateKey = when (destination) {
+                    AppDestination.CoffeeDetail,
+                    AppDestination.ReviewCoffee -> "${destination.name}:$selectedCoffeeId"
+
+                    else -> destination.name
+                }
+
+                saveableStateHolder.SaveableStateProvider(destinationStateKey) {
+                    when (destination) {
                     AppDestination.Home -> HomeScreen(
                         innerPadding = innerPadding,
                         strings = strings,
                         coffees = coffeesForUi,
-                        dataSource = coffeeDataSource,
                         onNavigate = {
-                            navigateTo(
-                                newDestination = it,
-                                source = "home"
-                            )
+                            when {
+                                authSession == null && it == AppDestination.ReviewCoffee -> {
+                                    requireLogin(
+                                        message = "Entre para dar sua nota a um café.",
+                                        continueTo = it
+                                    )
+                                }
+
+                                authSession == null && it == AppDestination.AddCoffee -> {
+                                    requireLogin(
+                                        message = "Entre para cadastrar um novo café.",
+                                        continueTo = it
+                                    )
+                                }
+
+                                else -> navigateTo(
+                                    newDestination = it,
+                                    source = "home"
+                                )
+                            }
                         },
                         onSearch = ::searchFromHome,
                         onOpenCoffee = ::openCoffeeDetail
@@ -768,7 +862,10 @@ fun CafeComNotaApp(
                         },
                         onReview = {
                             if (authSession == null) {
-                                requireLogin("Entre para dar sua nota a este café.")
+                                requireLogin(
+                                    message = "Entre para dar sua nota a este café.",
+                                    continueTo = AppDestination.ReviewCoffee
+                                )
                             } else {
                                 CafeAnalytics.logEvent(
                                     eventName = AnalyticsEvents.START_REVIEW,
@@ -802,9 +899,12 @@ fun CafeComNotaApp(
                         onSaved = ::afterReviewSaved,
                         onRequireLogin = {
                             if (authSession == null) {
-                                requireLogin("Entre para salvar sua avaliação.")
+                                requireLogin(
+                                    message = "Entre para salvar sua avaliação.",
+                                    continueTo = AppDestination.ReviewCoffee
+                                )
                             } else {
-                                handleExpiredSession()
+                                handleExpiredSession(AppDestination.ReviewCoffee)
                             }
                         }
                     )
@@ -814,18 +914,24 @@ fun CafeComNotaApp(
                         strings = strings,
                         authSession = authSession,
                         isAdmin = isAdmin,
+                        existingCoffees = coffeesForUi,
                         onBack = {
                             navigateBack(source = "add_coffee_back")
                         },
                         onSaved = ::afterCoffeeCreated,
+                        onOpenExistingCoffee = ::openCoffeeDetail,
                         onRequireLogin = { message ->
                             if (authSession == null) {
-                                requireLogin(message)
+                                requireLogin(
+                                    message = message,
+                                    continueTo = AppDestination.AddCoffee
+                                )
                             } else {
-                                handleExpiredSession()
+                                handleExpiredSession(AppDestination.AddCoffee)
                             }
                         }
                     )
+                    }
                 }
             }
         }

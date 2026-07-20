@@ -1,6 +1,8 @@
 package com.maurofmorato.cafecomnota.data.coffee
 
 import com.maurofmorato.cafecomnota.data.supabase.SupabaseConfig
+import com.maurofmorato.cafecomnota.data.auth.AuthenticationExpiredException
+import com.maurofmorato.cafecomnota.data.auth.isAuthenticationExpired
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -66,6 +68,9 @@ class SupabaseCoffeeWriteRepository {
             }
 
             if (statusCode !in 200..299) {
+                if (isAuthenticationExpired(statusCode, responseBody)) {
+                    throw AuthenticationExpiredException()
+                }
                 throw IllegalStateException(parseErrorMessage(responseBody))
             }
 
