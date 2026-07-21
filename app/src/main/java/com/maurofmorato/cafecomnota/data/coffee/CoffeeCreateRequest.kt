@@ -8,5 +8,12 @@ data class CoffeeCreateRequest(
     val standardWeightGrams: Int,
     val userId: String,
     val accessToken: String,
-    val status: String
+    val status: String,
+    val producer: String? = null,
+    val originRegion: String? = null,
+    val altitudeMeters: Int? = null,
+    val variety: String? = null,
+    val process: String? = null,
+    val aromaFlavor: String? = null,
+    val certification: String? = null
 )

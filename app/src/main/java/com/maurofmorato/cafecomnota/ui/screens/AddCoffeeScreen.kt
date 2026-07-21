@@ -1,11 +1,15 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,8 +17,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Info
@@ -36,7 +42,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -87,19 +97,56 @@ fun AddCoffeeScreen(
 
     var coffeeName by rememberSaveable { mutableStateOf("") }
     var brand by rememberSaveable { mutableStateOf("") }
-    var type by rememberSaveable { mutableStateOf("moido") }
-    var roast by rememberSaveable { mutableStateOf("media") }
+    var type by rememberSaveable { mutableStateOf("") }
+    var roast by rememberSaveable { mutableStateOf("") }
     var standardWeightText by rememberSaveable { mutableStateOf("250") }
+    var producer by rememberSaveable { mutableStateOf("") }
+    var originRegion by rememberSaveable { mutableStateOf("") }
+    var altitudeText by rememberSaveable { mutableStateOf("") }
+    var variety by rememberSaveable { mutableStateOf("") }
+    var process by rememberSaveable { mutableStateOf("") }
+    var aromaFlavor by rememberSaveable { mutableStateOf("") }
+    var certification by rememberSaveable { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
     var isReadingLabel by remember { mutableStateOf(false) }
     var message by rememberSaveable { mutableStateOf("") }
     var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPhotoSide by remember { mutableStateOf(LabelPhotoSide.Front) }
+    var frontPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var backPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var frontLabelText by rememberSaveable { mutableStateOf("") }
+    var backLabelText by rememberSaveable { mutableStateOf("") }
     var lastSuggestion by remember { mutableStateOf<CoffeeLabelSuggestion?>(null) }
+
+    fun applyCombinedSuggestion() {
+        val combinedText = listOf(frontLabelText, backLabelText)
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+        val suggestion = coffeeLabelSuggestion(
+            text = combinedText,
+            existingCoffees = existingCoffees
+        )
+        lastSuggestion = suggestion
+
+        coffeeName = suggestion.name
+        brand = suggestion.brand
+        standardWeightText = suggestion.weightGrams?.toString().orEmpty()
+        type = suggestion.type.orEmpty()
+        roast = suggestion.roast.orEmpty()
+        producer = suggestion.producer.orEmpty()
+        originRegion = suggestion.originRegion.orEmpty()
+        altitudeText = suggestion.altitudeMeters?.toString().orEmpty()
+        variety = suggestion.variety.orEmpty()
+        process = suggestion.process.orEmpty()
+        aromaFlavor = suggestion.aromaFlavor.orEmpty()
+        certification = suggestion.certification.orEmpty()
+    }
 
     val labelCameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         val photoUri = pendingPhotoUri
+        val photoSide = pendingPhotoSide
 
         if (!success || photoUri == null) {
             message = "Não foi possível obter a foto. Tente novamente."
@@ -112,19 +159,19 @@ fun AddCoffeeScreen(
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         recognizer.process(InputImage.fromFilePath(context, photoUri))
             .addOnSuccessListener { result ->
-                val suggestion = coffeeLabelSuggestion(result.text)
-                lastSuggestion = suggestion
-
-                if (suggestion.name.isNotBlank()) coffeeName = suggestion.name
-                if (suggestion.brand.isNotBlank()) brand = suggestion.brand
-                suggestion.weightGrams?.let { standardWeightText = it.toString() }
-                suggestion.type?.let { type = it }
-                suggestion.roast?.let { roast = it }
+                if (photoSide == LabelPhotoSide.Front) {
+                    frontPhotoUri = photoUri
+                    frontLabelText = result.text
+                } else {
+                    backPhotoUri = photoUri
+                    backLabelText = result.text
+                }
+                applyCombinedSuggestion()
 
                 message = if (result.text.isBlank()) {
-                    "Não identifiquei texto suficiente. Preencha os campos manualmente."
+                    "Não identifiquei texto suficiente nesta foto. Você pode refazê-la ou preencher manualmente."
                 } else {
-                    "Sugestões preenchidas. Confira cada campo antes de salvar."
+                    "Leitura ${photoSide.label.lowercase()} concluída. Confira as sugestões antes de salvar."
                 }
             }
             .addOnFailureListener {
@@ -208,7 +255,7 @@ fun AddCoffeeScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Centralize a frente do pacote. A foto é analisada no aparelho para sugerir nome, marca, peso, tipo e torra.",
+                            text = "Fotografe a frente e o verso. O app combina as duas leituras para sugerir dados principais e a ficha técnica.",
                             color = CoffeeMuted,
                             fontSize = 13.sp,
                             lineHeight = 17.sp
@@ -218,19 +265,46 @@ fun AddCoffeeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Button(
-                    onClick = {
-                        val photoUri = createLabelPhotoUri(context)
-                        pendingPhotoUri = photoUri
-                        labelCameraLauncher.launch(photoUri)
-                    },
-                    enabled = !isReadingLabel,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null)
+                    LabelPhotoCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Frente",
+                        photoUri = frontPhotoUri,
+                        context = context,
+                        enabled = !isReadingLabel,
+                        onClick = {
+                            val photoUri = createLabelPhotoUri(context, LabelPhotoSide.Front)
+                            pendingPhotoSide = LabelPhotoSide.Front
+                            pendingPhotoUri = photoUri
+                            labelCameraLauncher.launch(photoUri)
+                        }
+                    )
+
+                    LabelPhotoCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Verso",
+                        photoUri = backPhotoUri,
+                        context = context,
+                        enabled = !isReadingLabel,
+                        onClick = {
+                            val photoUri = createLabelPhotoUri(context, LabelPhotoSide.Back)
+                            pendingPhotoSide = LabelPhotoSide.Back
+                            pendingPhotoUri = photoUri
+                            labelCameraLauncher.launch(photoUri)
+                        }
+                    )
+                }
+
+                if (isReadingLabel) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = if (isReadingLabel) "Lendo rótulo..." else "Fotografar rótulo",
-                        modifier = Modifier.padding(start = 8.dp)
+                        text = "Lendo ${pendingPhotoSide.label.lowercase()} do pacote...",
+                        color = CoffeeBrown,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
@@ -253,6 +327,85 @@ fun AddCoffeeScreen(
                         lineHeight = 16.sp
                     )
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Ficha técnica do rótulo",
+                    color = CoffeeBrownDark,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Campos opcionais. Aproveite somente o que estiver legível na embalagem e corrija as sugestões quando necessário.",
+                    color = CoffeeMuted,
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LabelDetailField(
+                    value = aromaFlavor,
+                    onValueChange = { aromaFlavor = it },
+                    label = "Aromas e sabores declarados",
+                    placeholder = "Ex.: chocolate, caramelo e frutas amarelas"
+                )
+
+                LabelDetailField(
+                    value = originRegion,
+                    onValueChange = { originRegion = it },
+                    label = "Origem / região",
+                    placeholder = "Ex.: Cerrado Mineiro, MG"
+                )
+
+                LabelDetailField(
+                    value = producer,
+                    onValueChange = { producer = it },
+                    label = "Produtor / fazenda",
+                    placeholder = "Quando informado no pacote"
+                )
+
+                LabelDetailField(
+                    value = variety,
+                    onValueChange = { variety = it },
+                    label = "Variedade",
+                    placeholder = "Ex.: Bourbon Amarelo, 100% Arábica"
+                )
+
+                LabelDetailField(
+                    value = process,
+                    onValueChange = { process = it },
+                    label = "Processo",
+                    placeholder = "Ex.: natural, honey ou lavado"
+                )
+
+                LabelDetailField(
+                    value = altitudeText,
+                    onValueChange = { typed -> altitudeText = typed.filter(Char::isDigit).take(4) },
+                    label = "Altitude em metros",
+                    placeholder = "Ex.: 1100"
+                )
+
+                LabelDetailField(
+                    value = certification,
+                    onValueChange = { certification = it },
+                    label = "Certificação",
+                    placeholder = "Ex.: ABIC, orgânico, Rainforest Alliance",
+                    addBottomSpacing = false
+                )
             }
         }
 
@@ -403,6 +556,14 @@ fun AddCoffeeScreen(
                     }
                 }
 
+                if (type.isBlank()) {
+                    Text(
+                        text = "Não identificado. Selecione o tipo indicado no pacote.",
+                        color = CoffeeMuted,
+                        fontSize = 12.sp
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text("Torra", color = CoffeeBrownDark, fontWeight = FontWeight.SemiBold)
@@ -419,6 +580,15 @@ fun AddCoffeeScreen(
                         selected = roast == "escura",
                         onClick = { roast = "escura" },
                         label = { Text("Escura") }
+                    )
+                }
+
+                if (roast.isBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Não identificada. Selecione a torra antes de salvar.",
+                        color = CoffeeMuted,
+                        fontSize = 12.sp
                     )
                 }
             }
@@ -494,12 +664,14 @@ fun AddCoffeeScreen(
 
                 val name = coffeeName.trim()
                 val brandName = brand.trim()
-                val standardWeight = standardWeightText.toIntOrNull() ?: 250
+                val standardWeight = standardWeightText.toIntOrNull() ?: 0
 
                 val validationMessage = validateCoffeeForm(
                     name = name,
                     brand = brandName,
-                    standardWeight = standardWeight
+                    standardWeight = standardWeight,
+                    type = type,
+                    roast = roast
                 )
 
                 if (validationMessage != null) {
@@ -533,6 +705,13 @@ fun AddCoffeeScreen(
                                 type = type,
                                 roast = roast,
                                 standardWeightGrams = standardWeight,
+                                producer = producer.trim().ifBlank { null },
+                                originRegion = originRegion.trim().ifBlank { null },
+                                altitudeMeters = altitudeText.toIntOrNull(),
+                                variety = variety.trim().ifBlank { null },
+                                process = process.trim().ifBlank { null },
+                                aromaFlavor = aromaFlavor.trim().ifBlank { null },
+                                certification = certification.trim().ifBlank { null },
                                 userId = session.userId,
                                 accessToken = session.accessToken,
                                 status = statusToSave
@@ -599,10 +778,134 @@ fun AddCoffeeScreen(
     }
 }
 
+private enum class LabelPhotoSide(val label: String) {
+    Front("Frente"),
+    Back("Verso")
+}
+
+@Composable
+private fun LabelPhotoCard(
+    modifier: Modifier,
+    title: String,
+    photoUri: Uri?,
+    context: Context,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val preview = remember(photoUri) {
+        photoUri?.let { loadPhotoPreview(context, it) }
+    }
+
+    Card(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CoffeeGold.copy(alpha = 0.10f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(94.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(CoffeeLine.copy(alpha = 0.22f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (preview != null) {
+                    Image(
+                        bitmap = preview.asImageBitmap(),
+                        contentDescription = "Foto da ${title.lowercase()} do pacote",
+                        modifier = Modifier.fillMaxWidth().height(94.dp),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = CoffeeGold,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(25.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = null,
+                        tint = CoffeeBrown,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (photoUri == null) "Fotografar $title" else "Refazer $title",
+                color = CoffeeBrownDark,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun LabelDetailField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    addBottomSpacing: Boolean = true
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        placeholder = { Text(placeholder) },
+        singleLine = true,
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = CoffeeGold,
+            unfocusedIndicatorColor = CoffeeLine,
+            cursorColor = CoffeeBrown
+        )
+    )
+
+    if (addBottomSpacing) {
+        Spacer(modifier = Modifier.height(10.dp))
+    }
+}
+
+private fun loadPhotoPreview(context: Context, uri: Uri) = runCatching {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use { stream ->
+        BitmapFactory.decodeStream(stream, null, bounds)
+    }
+
+    var sampleSize = 1
+    while (bounds.outWidth / sampleSize > 900 || bounds.outHeight / sampleSize > 900) {
+        sampleSize *= 2
+    }
+
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    context.contentResolver.openInputStream(uri)?.use { stream ->
+        BitmapFactory.decodeStream(stream, null, options)
+    }
+}.getOrNull()
+
 private fun validateCoffeeForm(
     name: String,
     brand: String,
-    standardWeight: Int
+    standardWeight: Int,
+    type: String,
+    roast: String
 ): String? {
     if (name.isBlank()) {
         return "Informe o nome do café."
@@ -626,6 +929,14 @@ private fun validateCoffeeForm(
 
     if (standardWeight > 5000) {
         return "Peso muito alto. Confira se está em gramas."
+    }
+
+    if (type !in setOf("moido", "grao", "capsula")) {
+        return "Selecione o tipo do café."
+    }
+
+    if (roast !in setOf("media", "escura")) {
+        return "Selecione a torra do café."
     }
 
     return null
@@ -671,12 +982,20 @@ private fun findPotentialDuplicate(
     }
 }
 
-private data class CoffeeLabelSuggestion(
+internal data class CoffeeLabelSuggestion(
     val name: String,
     val brand: String,
     val weightGrams: Int?,
     val type: String?,
-    val roast: String?
+    val roast: String?,
+    val producer: String? = null,
+    val originRegion: String? = null,
+    val altitudeMeters: Int? = null,
+    val variety: String? = null,
+    val process: String? = null,
+    val aromaFlavor: String? = null,
+    val certification: String? = null,
+    val matchedCatalog: Boolean = false
 ) {
     fun summary(): String {
         val detected = buildList {
@@ -685,13 +1004,25 @@ private data class CoffeeLabelSuggestion(
             weightGrams?.let { add("peso: ${it}g") }
             type?.let { add("tipo: ${if (it == "grao") "grãos" else if (it == "moido") "moído" else "cápsula"}") }
             roast?.let { add("torra: ${if (it == "media") "média" else "escura"}") }
+            aromaFlavor?.let { add("perfil: $it") }
+            originRegion?.let { add("origem: $it") }
+            variety?.let { add("variedade: $it") }
+            process?.let { add("processo: $it") }
+            certification?.let { add("certificação: $it") }
         }
 
-        return if (detected.isEmpty()) "Nenhum campo reconhecido com segurança." else "Detectado — ${detected.joinToString(" • ")}"
+        return when {
+            detected.isEmpty() -> "Nenhum campo reconhecido com segurança."
+            matchedCatalog -> "Encontrado no catálogo — ${detected.joinToString(" • ")}"
+            else -> "Detectado — ${detected.joinToString(" • ")}"
+        }
     }
 }
 
-private fun coffeeLabelSuggestion(text: String): CoffeeLabelSuggestion {
+internal fun coffeeLabelSuggestion(
+    text: String,
+    existingCoffees: List<CoffeeUiModel>
+): CoffeeLabelSuggestion {
     val cleanLines = text.lines()
         .map(::cleanOcrLine)
         .filter { it.length >= 3 }
@@ -724,15 +1055,38 @@ private fun coffeeLabelSuggestion(text: String): CoffeeLabelSuggestion {
     }
 
     val roast = when {
-        Regex("\\b(torra )?(escura|forte|extraforte|extra forte)\\b").containsMatchIn(normalizedText) -> "escura"
-        Regex("\\b(torra )?(media|medio)\\b").containsMatchIn(normalizedText) -> "media"
+        Regex("\\btorra (escura|forte|extraforte|extra forte)\\b").containsMatchIn(normalizedText) -> "escura"
+        Regex("\\b(extra forte|extraforte)\\b").containsMatchIn(normalizedText) -> "escura"
+        Regex("\\btorra (media|medio)\\b").containsMatchIn(normalizedText) -> "media"
         else -> null
+    }
+
+    val technicalDetails = technicalLabelDetails(cleanLines, normalizedText)
+
+    findCatalogCoffee(normalizedText, existingCoffees)?.let { coffee ->
+        return CoffeeLabelSuggestion(
+            name = coffee.name,
+            brand = coffee.brand,
+            weightGrams = weightInGrams ?: weightInKg,
+            type = technicalCoffeeType(coffee.type) ?: type,
+            roast = technicalCoffeeRoast(coffee.roast) ?: roast,
+            producer = coffee.producer ?: technicalDetails.producer,
+            originRegion = coffee.originRegion ?: technicalDetails.originRegion,
+            altitudeMeters = coffee.altitudeMeters ?: technicalDetails.altitudeMeters,
+            variety = coffee.variety ?: technicalDetails.variety,
+            process = coffee.process ?: technicalDetails.process,
+            aromaFlavor = coffee.aromaFlavor ?: technicalDetails.aromaFlavor,
+            certification = coffee.certification ?: technicalDetails.certification,
+            matchedCatalog = true
+        )
     }
 
     val ignoredTerms = listOf(
         "informacao nutricional", "validade", "lote", "sac", "industria", "fabricado",
         "cafe torrado", "torrado em grao", "torrado e moido", "100 arabica", "peso liquido",
-        "especial de verdade", "notas de", "torra media", "torra escura"
+        "especial de verdade", "notas de", "torra media", "torra escura",
+        "cafe com", "compre pelo app", "pague por", "baixar app", "desde 18",
+        "imagem meramente ilustrativa", "informacoes do produto", "avaliacoes"
     )
 
     val titleCandidates = cleanLines.filter { line ->
@@ -743,31 +1097,36 @@ private fun coffeeLabelSuggestion(text: String): CoffeeLabelSuggestion {
     }
 
     val descriptorWords = listOf(
-        "bourbon", "intenso", "extra forte", "tradicional", "gourmet", "especial", "espresso", "premium"
+        "bourbon", "intenso", "extra forte", "tradicional", "gourmet", "especial",
+        "espresso", "premium", "chocolate", "trufado", "avela", "caramelo",
+        "frutado", "classico", "organico", "blend", "cerrado", "mogiana"
     )
-    val coffeeLineIndex = titleCandidates.indexOfFirst { line ->
-        normalizeForSearch(line).contains("cafe")
-    }
-    val coffeeLine = titleCandidates.getOrNull(coffeeLineIndex).orEmpty()
-    val lineAfterCoffee = titleCandidates.getOrNull(coffeeLineIndex + 1).orEmpty()
-    val brand = when {
-        normalizeForSearch(coffeeLine) == "cafe" &&
-            lineAfterCoffee.isNotBlank() &&
-            descriptorWords.none(normalizeForSearch(lineAfterCoffee)::contains) -> "$coffeeLine $lineAfterCoffee"
-        coffeeLine.isNotBlank() -> coffeeLine
-        else -> titleCandidates.firstOrNull().orEmpty()
-    }
-
-    val descriptor = titleCandidates.firstOrNull { line ->
+    val descriptorLines = titleCandidates.filter { line ->
         val normalized = normalizeForSearch(line)
-        line != brand && descriptorWords.any(normalized::contains)
-    }.orEmpty()
+        descriptorWords.any(normalized::contains)
+    }
+    val descriptor = descriptorLines
+        .take(2)
+        .joinToString(" ")
+        .replace(Regex("(?i)^(aromas?|sabor|notas? de)\\s+"), "")
+        .trim()
+
+    val brand = titleCandidates
+        .filter { line ->
+            val normalized = normalizeForSearch(line)
+            line !in descriptorLines &&
+                normalized !in setOf("cafe", "coffee") &&
+                descriptorWords.none(normalized::contains)
+        }
+        .maxByOrNull(::brandCandidateScore)
+        ?.let(::smartDisplayText)
+        .orEmpty()
 
     val name = when {
         brand.isBlank() -> descriptor
         descriptor.isBlank() -> brand
         normalizeForSearch(brand).contains(normalizeForSearch(descriptor)) -> brand
-        else -> "$brand $descriptor"
+        else -> "$brand ${smartDisplayText(descriptor)}"
     }
 
     return CoffeeLabelSuggestion(
@@ -775,8 +1134,173 @@ private fun coffeeLabelSuggestion(text: String): CoffeeLabelSuggestion {
         brand = brand,
         weightGrams = weightInGrams ?: weightInKg,
         type = type,
-        roast = roast
+        roast = roast,
+        producer = technicalDetails.producer,
+        originRegion = technicalDetails.originRegion,
+        altitudeMeters = technicalDetails.altitudeMeters,
+        variety = technicalDetails.variety,
+        process = technicalDetails.process,
+        aromaFlavor = technicalDetails.aromaFlavor,
+        certification = technicalDetails.certification
     )
+}
+
+private data class TechnicalLabelDetails(
+    val producer: String? = null,
+    val originRegion: String? = null,
+    val altitudeMeters: Int? = null,
+    val variety: String? = null,
+    val process: String? = null,
+    val aromaFlavor: String? = null,
+    val certification: String? = null
+)
+
+private fun technicalLabelDetails(
+    lines: List<String>,
+    normalizedText: String
+): TechnicalLabelDetails {
+    val altitude = Regex("\\b(\\d{3,4})\\s?(m|metros)\\b", RegexOption.IGNORE_CASE)
+        .find(normalizedText)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+        ?.takeIf { it in 300..3000 }
+
+    val varietyTerms = listOf(
+        "bourbon amarelo", "bourbon vermelho", "bourbon", "catucai", "catuai",
+        "mundo novo", "geisha", "gesha", "icatu", "arara", "100 arabica", "arabica"
+    )
+    val processTerms = listOf(
+        "cereja descascado", "despolpado", "fermentacao anaerobica", "anaerobico",
+        "honey", "natural", "lavado", "washed"
+    )
+    val sensoryTerms = listOf(
+        "chocolate trufado", "chocolate", "caramelo", "avela", "castanhas", "amendoas",
+        "frutas amarelas", "frutas vermelhas", "frutado", "floral", "citricos", "mel",
+        "acucar mascavo", "baunilha", "cacau", "rapadura"
+    )
+    val certificationTerms = listOf(
+        "abic gourmet", "abic superior", "abic tradicional", "rainforest alliance",
+        "fairtrade", "certifica minas", "denominacao de origem", "organico"
+    )
+
+    val variety = findTermsInText(normalizedText, varietyTerms)
+    val process = findTermsInText(normalizedText, processTerms)
+    val aromaFlavor = findTermsInText(normalizedText, sensoryTerms)
+    val certification = findTermsInText(normalizedText, certificationTerms)
+
+    val producer = findLabeledValue(lines, listOf("produtor", "fazenda", "sitio", "torrefacao"))
+    val origin = findLabeledValue(lines, listOf("origem", "regiao", "procedencia"))
+
+    return TechnicalLabelDetails(
+        producer = producer,
+        originRegion = origin,
+        altitudeMeters = altitude,
+        variety = variety,
+        process = process,
+        aromaFlavor = aromaFlavor,
+        certification = certification
+    )
+}
+
+private fun findTermsInText(text: String, terms: List<String>): String? {
+    val matches = terms
+        .filter { term -> Regex("(^| )${Regex.escape(term)}( |$)").containsMatchIn(text) }
+        .distinct()
+
+    return matches.takeIf { it.isNotEmpty() }
+        ?.joinToString(", ") { smartDisplayText(it) }
+}
+
+private fun findLabeledValue(lines: List<String>, labels: List<String>): String? {
+    lines.forEachIndexed { index, line ->
+        val normalized = normalizeForSearch(line)
+        val label = labels.firstOrNull { normalized == it || normalized.startsWith("$it ") }
+            ?: return@forEachIndexed
+        val inlineValue = normalized.removePrefix(label).trim(' ', ':', '-')
+        if (inlineValue.length >= 3) {
+            return smartDisplayText(inlineValue)
+        }
+
+        val nextLine = lines.getOrNull(index + 1).orEmpty()
+        if (nextLine.length in 3..80) {
+            return smartDisplayText(nextLine)
+        }
+    }
+
+    return null
+}
+
+private val catalogTokenStopWords = setOf(
+    "cafe", "cafes", "coffee", "torrado", "torrada", "moido", "moida", "grao", "graos",
+    "aroma", "aromas", "sabor", "desde", "especial", "premium", "gourmet"
+)
+
+private fun findCatalogCoffee(
+    normalizedOcrText: String,
+    existingCoffees: List<CoffeeUiModel>
+): CoffeeUiModel? {
+    val ocrTokens = normalizedOcrText.split(' ').filter { it.isNotBlank() }.toSet()
+
+    return existingCoffees.mapNotNull { coffee ->
+        val brandTokens = meaningfulCatalogTokens(coffee.brand)
+        val nameTokens = meaningfulCatalogTokens(coffee.name)
+        val productTokens = nameTokens - brandTokens
+
+        if (brandTokens.isEmpty() || brandTokens.any { it !in ocrTokens }) {
+            return@mapNotNull null
+        }
+
+        val productHits = productTokens.count { it in ocrTokens }
+        if (productTokens.isNotEmpty() && productHits == 0) {
+            return@mapNotNull null
+        }
+
+        val coverage = if (productTokens.isEmpty()) 0 else (productHits * 100) / productTokens.size
+        coffee to (brandTokens.size * 100 + productHits * 30 + coverage)
+    }.maxByOrNull { (_, score) -> score }
+        ?.takeIf { (_, score) -> score >= 130 }
+        ?.first
+}
+
+private fun meaningfulCatalogTokens(value: String): Set<String> = normalizeForSearch(value)
+    .split(' ')
+    .filter { token -> token.length >= 3 && token !in catalogTokenStopWords }
+    .toSet()
+
+private fun technicalCoffeeType(displayValue: String): String? = when {
+    normalizeForSearch(displayValue).contains("capsula") -> "capsula"
+    normalizeForSearch(displayValue).contains("grao") -> "grao"
+    normalizeForSearch(displayValue).contains("moido") -> "moido"
+    else -> null
+}
+
+private fun technicalCoffeeRoast(displayValue: String): String? = when {
+    normalizeForSearch(displayValue).contains("escura") -> "escura"
+    normalizeForSearch(displayValue).contains("media") -> "media"
+    else -> null
+}
+
+private fun brandCandidateScore(value: String): Int {
+    val letters = value.filter { it.isLetter() }
+    val uppercaseRatio = if (letters.isEmpty()) 0 else letters.count { it.isUpperCase() } * 100 / letters.length
+    val wordCount = value.split(' ').count { it.isNotBlank() }
+    val conciseBonus = when (wordCount) {
+        1 -> 45
+        2, 3 -> 30
+        else -> 0
+    }
+
+    return uppercaseRatio + conciseBonus - value.length.coerceAtMost(40)
+}
+
+private fun smartDisplayText(value: String): String {
+    val letters = value.filter { it.isLetter() }
+    if (letters.isEmpty() || letters.any { it.isLowerCase() }) return value.trim()
+
+    return value.lowercase().split(' ').joinToString(" ") { word ->
+        word.replaceFirstChar { first -> first.titlecase() }
+    }.trim()
 }
 
 private fun cleanOcrLine(value: String): String = value
@@ -784,9 +1308,13 @@ private fun cleanOcrLine(value: String): String = value
     .replace(Regex("\\s+"), " ")
     .trim(' ', '-', '.', ',')
 
-private fun createLabelPhotoUri(context: Context): Uri {
+private fun createLabelPhotoUri(context: Context, side: LabelPhotoSide): Uri {
     val photoDirectory = File(context.cacheDir, "label_photos").apply { mkdirs() }
-    val photoFile = File.createTempFile("coffee_label_", ".jpg", photoDirectory)
+    val photoFile = File.createTempFile(
+        "coffee_label_${side.name.lowercase()}_",
+        ".jpg",
+        photoDirectory
+    )
 
     return FileProvider.getUriForFile(
         context,

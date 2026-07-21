@@ -29,6 +29,14 @@ class SupabaseCoffeeWriteRepository {
                 .put("status", request.status)
                 .put("cadastrado_por", request.userId)
 
+            request.producer?.let { body.put("produtor", it) }
+            request.originRegion?.let { body.put("origem_regiao", it) }
+            request.altitudeMeters?.let { body.put("altitude_m", it) }
+            request.variety?.let { body.put("variedade", it) }
+            request.process?.let { body.put("processo", it) }
+            request.aromaFlavor?.let { body.put("aroma_sabor", it) }
+            request.certification?.let { body.put("certificacao", it) }
+
             executeInsert(
                 endpoint = endpoint,
                 accessToken = request.accessToken,

@@ -176,7 +176,7 @@ private fun ShareQrDialog(
 private fun coffeeShareLink(coffeeId: String): String = "cafecomnota://coffee/$coffeeId"
 
 private const val TESTING_APP_LINK =
-    "https://play.google.com/apps/test/com.maurofmorato.cafecomnota/14"
+    "https://play.google.com/apps/test/com.maurofmorato.cafecomnota/16"
 
 private fun generateQrCode(content: String): Bitmap {
     val matrix = MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, 720, 720)
