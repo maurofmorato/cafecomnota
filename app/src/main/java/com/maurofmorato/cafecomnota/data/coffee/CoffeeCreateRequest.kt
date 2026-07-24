@@ -15,5 +15,6 @@ data class CoffeeCreateRequest(
     val variety: String? = null,
     val process: String? = null,
     val aromaFlavor: String? = null,
-    val certification: String? = null
+    val certification: String? = null,
+    val photos: List<CoffeePhotoUpload> = emptyList()
 )

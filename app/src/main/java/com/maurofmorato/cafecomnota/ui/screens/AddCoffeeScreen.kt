@@ -8,6 +8,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,11 +20,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.Save
@@ -56,6 +60,8 @@ import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.data.auth.AuthenticationExpiredException
 import com.maurofmorato.cafecomnota.data.coffee.CoffeeCreateRequest
+import com.maurofmorato.cafecomnota.data.coffee.CoffeePhotoUpload
+import com.maurofmorato.cafecomnota.data.coffee.SupabaseCoffeePhotoRepository
 import com.maurofmorato.cafecomnota.data.coffee.SupabaseCoffeeWriteRepository
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
@@ -76,6 +82,7 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.Normalizer
+import java.util.UUID
 
 @Composable
 fun AddCoffeeScreen(
@@ -94,6 +101,9 @@ fun AddCoffeeScreen(
     val coffeeWriteRepository = remember {
         SupabaseCoffeeWriteRepository()
     }
+    val coffeePhotoRepository = remember {
+        SupabaseCoffeePhotoRepository()
+    }
 
     var coffeeName by rememberSaveable { mutableStateOf("") }
     var brand by rememberSaveable { mutableStateOf("") }
@@ -111,15 +121,15 @@ fun AddCoffeeScreen(
     var isReadingLabel by remember { mutableStateOf(false) }
     var message by rememberSaveable { mutableStateOf("") }
     var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var pendingPhotoSide by remember { mutableStateOf(LabelPhotoSide.Front) }
-    var frontPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var backPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var frontLabelText by rememberSaveable { mutableStateOf("") }
-    var backLabelText by rememberSaveable { mutableStateOf("") }
+    var pendingPhotoLabel by remember { mutableStateOf(LabelPhotoLabel.Front) }
+    var pendingPhotoId by remember { mutableStateOf<String?>(null) }
+    var selectedPhotoLabel by rememberSaveable { mutableStateOf(LabelPhotoLabel.Front) }
+    var labelPhotos by remember { mutableStateOf<List<LabelPhotoDraft>>(emptyList()) }
     var lastSuggestion by remember { mutableStateOf<CoffeeLabelSuggestion?>(null) }
 
-    fun applyCombinedSuggestion() {
-        val combinedText = listOf(frontLabelText, backLabelText)
+    fun applyCombinedSuggestion(photos: List<LabelPhotoDraft>) {
+        val combinedText = photos
+            .map { it.ocrText }
             .filter { it.isNotBlank() }
             .joinToString("\n")
         val suggestion = coffeeLabelSuggestion(
@@ -146,7 +156,8 @@ fun AddCoffeeScreen(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         val photoUri = pendingPhotoUri
-        val photoSide = pendingPhotoSide
+        val photoLabel = pendingPhotoLabel
+        val photoId = pendingPhotoId
 
         if (!success || photoUri == null) {
             message = "Não foi possível obter a foto. Tente novamente."
@@ -159,19 +170,26 @@ fun AddCoffeeScreen(
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         recognizer.process(InputImage.fromFilePath(context, photoUri))
             .addOnSuccessListener { result ->
-                if (photoSide == LabelPhotoSide.Front) {
-                    frontPhotoUri = photoUri
-                    frontLabelText = result.text
+                val capturedPhoto = LabelPhotoDraft(
+                    id = photoId ?: UUID.randomUUID().toString(),
+                    label = photoLabel,
+                    uri = photoUri,
+                    ocrText = result.text
+                )
+                val updatedPhotos = if (photoId == null) {
+                    labelPhotos + capturedPhoto
                 } else {
-                    backPhotoUri = photoUri
-                    backLabelText = result.text
+                    labelPhotos.map { photo ->
+                        if (photo.id == photoId) capturedPhoto else photo
+                    }
                 }
-                applyCombinedSuggestion()
+                labelPhotos = updatedPhotos
+                applyCombinedSuggestion(updatedPhotos)
 
                 message = if (result.text.isBlank()) {
                     "Não identifiquei texto suficiente nesta foto. Você pode refazê-la ou preencher manualmente."
                 } else {
-                    "Leitura ${photoSide.label.lowercase()} concluída. Confira as sugestões antes de salvar."
+                    "Leitura ${photoLabel.label.lowercase()} concluída. Confira as sugestões antes de salvar."
                 }
             }
             .addOnFailureListener {
@@ -255,7 +273,7 @@ fun AddCoffeeScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Fotografe a frente e o verso. O app combina as duas leituras para sugerir dados principais e a ficha técnica.",
+                            text = "Adicione até cinco fotos: frente, verso, laterais ou detalhes do pacote. O app combina as leituras para sugerir a ficha técnica.",
                             color = CoffeeMuted,
                             fontSize = 13.sp,
                             lineHeight = 17.sp
@@ -265,43 +283,90 @@ fun AddCoffeeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                Text(
+                    text = "Tipo da próxima foto",
+                    color = CoffeeBrownDark,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LabelPhotoLabel.entries.forEach { label ->
+                        FilterChip(
+                            selected = selectedPhotoLabel == label,
+                            onClick = { selectedPhotoLabel = label },
+                            label = { Text(label.label) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    LabelPhotoCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Frente",
-                        photoUri = frontPhotoUri,
-                        context = context,
-                        enabled = !isReadingLabel,
-                        onClick = {
-                            val photoUri = createLabelPhotoUri(context, LabelPhotoSide.Front)
-                            pendingPhotoSide = LabelPhotoSide.Front
-                            pendingPhotoUri = photoUri
-                            labelCameraLauncher.launch(photoUri)
-                        }
-                    )
+                    labelPhotos.forEach { photo ->
+                        LabelPhotoCard(
+                            modifier = Modifier.width(146.dp),
+                            title = photo.label.label,
+                            photoUri = photo.uri,
+                            context = context,
+                            enabled = !isReadingLabel,
+                            onClick = {
+                                val photoUri = createLabelPhotoUri(context, photo.label)
+                                pendingPhotoLabel = photo.label
+                                pendingPhotoId = photo.id
+                                pendingPhotoUri = photoUri
+                                labelCameraLauncher.launch(photoUri)
+                            },
+                            onRemove = {
+                                labelPhotos = labelPhotos.filterNot { it.id == photo.id }
+                                applyCombinedSuggestion(labelPhotos)
+                            }
+                        )
+                    }
 
-                    LabelPhotoCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Verso",
-                        photoUri = backPhotoUri,
-                        context = context,
-                        enabled = !isReadingLabel,
-                        onClick = {
-                            val photoUri = createLabelPhotoUri(context, LabelPhotoSide.Back)
-                            pendingPhotoSide = LabelPhotoSide.Back
-                            pendingPhotoUri = photoUri
-                            labelCameraLauncher.launch(photoUri)
-                        }
-                    )
+                    if (labelPhotos.size < MAX_LABEL_PHOTOS) {
+                        LabelPhotoCard(
+                            modifier = Modifier.width(146.dp),
+                            title = "Adicionar ${selectedPhotoLabel.label}",
+                            photoUri = null,
+                            context = context,
+                            enabled = !isReadingLabel,
+                            onClick = {
+                                val photoUri = createLabelPhotoUri(context, selectedPhotoLabel)
+                                pendingPhotoLabel = selectedPhotoLabel
+                                pendingPhotoId = null
+                                pendingPhotoUri = photoUri
+                                labelCameraLauncher.launch(photoUri)
+                            }
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "${labelPhotos.size}/$MAX_LABEL_PHOTOS fotos. A primeira será a capa quando o café for aprovado.",
+                    color = CoffeeMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
 
                 if (isReadingLabel) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Lendo ${pendingPhotoSide.label.lowercase()} do pacote...",
+                        text = "Lendo ${pendingPhotoLabel.label.lowercase()} do pacote...",
                         color = CoffeeBrown,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
@@ -698,7 +763,14 @@ fun AddCoffeeScreen(
 
                 coroutineScope.launch {
                     try {
-                        coffeeWriteRepository.createCoffee(
+                        val photosToUpload = labelPhotos.map { photo ->
+                            CoffeePhotoUpload(
+                                uri = photo.uri,
+                                label = photo.label.storageValue
+                            )
+                        }
+
+                        val coffeeId = coffeeWriteRepository.createCoffee(
                             request = CoffeeCreateRequest(
                                 name = name,
                                 brand = brandName,
@@ -714,9 +786,26 @@ fun AddCoffeeScreen(
                                 certification = certification.trim().ifBlank { null },
                                 userId = session.userId,
                                 accessToken = session.accessToken,
-                                status = statusToSave
+                                status = statusToSave,
+                                photos = photosToUpload
                             )
                         )
+
+                        if (photosToUpload.isNotEmpty()) {
+                            if (coffeeId.isBlank()) {
+                                throw IllegalStateException(
+                                    "O café foi salvo, mas não foi possível identificar o cadastro para enviar as fotos."
+                                )
+                            }
+
+                            coffeePhotoRepository.uploadPhotos(
+                                context = context,
+                                coffeeId = coffeeId,
+                                userId = session.userId,
+                                accessToken = session.accessToken,
+                                photos = photosToUpload
+                            )
+                        }
 
                         CafeAnalytics.logEvent(
                             eventName = "save_new_coffee_success",
@@ -778,10 +867,26 @@ fun AddCoffeeScreen(
     }
 }
 
-private enum class LabelPhotoSide(val label: String) {
-    Front("Frente"),
-    Back("Verso")
+private const val MAX_LABEL_PHOTOS = 5
+
+private enum class LabelPhotoLabel(
+    val label: String,
+    val storageValue: String
+) {
+    Front("Frente", "frente"),
+    Back("Verso", "verso"),
+    Side("Lateral", "lateral"),
+    Information("Informações", "informacoes"),
+    Barcode("Código de barras", "codigo_barras"),
+    Other("Outra", "outra")
 }
+
+private data class LabelPhotoDraft(
+    val id: String,
+    val label: LabelPhotoLabel,
+    val uri: Uri,
+    val ocrText: String
+)
 
 @Composable
 private fun LabelPhotoCard(
@@ -790,7 +895,8 @@ private fun LabelPhotoCard(
     photoUri: Uri?,
     context: Context,
     enabled: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onRemove: (() -> Unit)? = null
 ) {
     val preview = remember(photoUri) {
         photoUri?.let { loadPhotoPreview(context, it) }
@@ -834,6 +940,27 @@ private fun LabelPhotoCard(
                             .padding(6.dp)
                             .size(25.dp)
                     )
+
+                    onRemove?.let { remove ->
+                        IconButton(
+                            onClick = remove,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(1.dp)
+                                .size(32.dp)
+                                .background(
+                                    color = CoffeeCard.copy(alpha = 0.92f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remover foto",
+                                tint = CoffeeBrownDark,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 } else {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
@@ -847,7 +974,7 @@ private fun LabelPhotoCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = if (photoUri == null) "Fotografar $title" else "Refazer $title",
+                text = if (photoUri == null) title else "Refazer $title",
                 color = CoffeeBrownDark,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
@@ -1308,10 +1435,10 @@ private fun cleanOcrLine(value: String): String = value
     .replace(Regex("\\s+"), " ")
     .trim(' ', '-', '.', ',')
 
-private fun createLabelPhotoUri(context: Context, side: LabelPhotoSide): Uri {
+private fun createLabelPhotoUri(context: Context, label: LabelPhotoLabel): Uri {
     val photoDirectory = File(context.cacheDir, "label_photos").apply { mkdirs() }
     val photoFile = File.createTempFile(
-        "coffee_label_${side.name.lowercase()}_",
+        "coffee_label_${label.storageValue}_",
         ".jpg",
         photoDirectory
     )
