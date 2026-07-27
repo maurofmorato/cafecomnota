@@ -2,6 +2,7 @@ package com.maurofmorato.cafecomnota.ui.i18n
 
 data class AppStrings(
     val appName: String,
+    val coffeeWord: String,
     val tagline: String,
 
     val navHome: String,
@@ -94,6 +95,7 @@ fun stringsFor(language: AppLanguage): AppStrings {
     return when (language) {
         AppLanguage.Portuguese -> AppStrings(
             appName = "Café com nota",
+            coffeeWord = "Café",
             tagline = "Descubra se esse café é bom antes de comprar.",
 
             navHome = "Início",
@@ -184,6 +186,7 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
         AppLanguage.English -> AppStrings(
             appName = "Coffee with rating",
+            coffeeWord = "Coffee",
             tagline = "Find out if this coffee is good before buying.",
 
             navHome = "Home",
@@ -274,6 +277,7 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
         AppLanguage.Spanish -> AppStrings(
             appName = "Café con nota",
+            coffeeWord = "Café",
             tagline = "Descubre si este café es bueno antes de comprar.",
 
             navHome = "Inicio",
@@ -364,6 +368,7 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
         AppLanguage.French -> AppStrings(
             appName = "Café noté",
+            coffeeWord = "Café",
             tagline = "Découvrez si ce café est bon avant d’acheter.",
 
             navHome = "Accueil",
@@ -454,6 +459,7 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
         AppLanguage.German -> AppStrings(
             appName = "Kaffee mit Bewertung",
+            coffeeWord = "Kaffee",
             tagline = "Finde vor dem Kauf heraus, ob dieser Kaffee gut ist.",
 
             navHome = "Start",
@@ -544,6 +550,7 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
         AppLanguage.Chinese -> AppStrings(
             appName = "咖啡评分",
+            coffeeWord = "咖啡",
             tagline = "购买前先看看这款咖啡好不好。",
 
             navHome = "首页",
@@ -634,6 +641,7 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
         AppLanguage.Japanese -> AppStrings(
             appName = "コーヒー評価",
+            coffeeWord = "コーヒー",
             tagline = "買う前に、このコーヒーが良いか確認しましょう。",
 
             navHome = "ホーム",

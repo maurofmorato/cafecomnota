@@ -48,7 +48,6 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeCard
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeGold
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeLine
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
-import com.maurofmorato.cafecomnota.ui.theme.CoffeeText
 
 @Composable
 fun ProfileScreen(
@@ -397,6 +396,7 @@ private fun AccountCard(
     val confirmPassword = remember {
         mutableStateOf("")
     }
+    val showPasswordFields = remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -411,113 +411,86 @@ private fun AccountCard(
         androidx.compose.foundation.layout.Column(
             modifier = Modifier.padding(14.dp)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = null,
                     tint = CoffeeBrown
                 )
 
-                Text(
-                    text = "Conta conectada",
-                    color = CoffeeBrownDark,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                androidx.compose.foundation.layout.Column {
+                    Text(
+                        text = "Conta conectada",
+                        color = CoffeeBrownDark,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = authSession.email,
+                        color = CoffeeMuted,
+                        fontSize = 13.sp
+                    )
+                }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = authSession.email,
-                color = CoffeeText,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
 
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Você pode alterar sua senha aqui. Se veio por um link de recuperação, informe a nova senha e salve.",
+                text = "Sua conta mantém seus cafés, avaliações e contribuições sincronizados.",
                 color = CoffeeMuted,
                 fontSize = 13.sp,
                 lineHeight = 17.sp
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Password,
-                    contentDescription = null,
-                    tint = CoffeeBrown
-                )
-
-                Text(
-                    text = "Alterar senha",
-                    color = CoffeeBrownDark,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = newPassword.value,
-                onValueChange = {
-                    newPassword.value = it
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text("Nova senha")
-                },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = CoffeeGold,
-                    unfocusedIndicatorColor = CoffeeLine,
-                    cursorColor = CoffeeBrown
-                )
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = confirmPassword.value,
-                onValueChange = {
-                    confirmPassword.value = it
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text("Confirmar nova senha")
-                },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = CoffeeGold,
-                    unfocusedIndicatorColor = CoffeeLine,
-                    cursorColor = CoffeeBrown
-                )
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Button(
-                onClick = {
-                    onChangePassword(
-                        newPassword.value,
-                        confirmPassword.value
-                    )
-                },
+            OutlinedButton(
+                onClick = { showPasswordFields.value = !showPasswordFields.value },
                 enabled = !isWorking,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (isWorking) "Salvando..." else "Salvar nova senha")
+                Icon(imageVector = Icons.Default.Password, contentDescription = null)
+                Text(
+                    text = if (showPasswordFields.value) "Fechar alteração de senha" else "Alterar senha",
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            if (showPasswordFields.value) {
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = newPassword.value,
+                    onValueChange = { newPassword.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Nova senha") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = CoffeeGold,
+                        unfocusedIndicatorColor = CoffeeLine,
+                        cursorColor = CoffeeBrown
+                    )
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = confirmPassword.value,
+                    onValueChange = { confirmPassword.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Confirmar nova senha") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = CoffeeGold,
+                        unfocusedIndicatorColor = CoffeeLine,
+                        cursorColor = CoffeeBrown
+                    )
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Button(
+                    onClick = { onChangePassword(newPassword.value, confirmPassword.value) },
+                    enabled = !isWorking,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(if (isWorking) "Salvando..." else "Salvar nova senha") }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -577,7 +550,7 @@ private fun AdminCard(onOpenAdministration: () -> Unit) {
                 )
 
                 Text(
-                    text = "Fila de revisão",
+                    text = "Ferramentas de moderador",
                     color = CoffeeBrownDark,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -587,7 +560,7 @@ private fun AdminCard(onOpenAdministration: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Revise primeiro os cafés pendentes. Você pode aprovar rapidamente ou abrir uma análise completa, sempre com auditoria.",
+                text = "Revise cafés, preserve o histórico e mantenha a base confiável.",
                 color = CoffeeMuted,
                 fontSize = 13.sp,
                 lineHeight = 17.sp

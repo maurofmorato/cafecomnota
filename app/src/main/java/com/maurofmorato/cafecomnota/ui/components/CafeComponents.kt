@@ -252,12 +252,16 @@ fun SubScreenHero(
                     }
                 }
 
-                Box(
+                Text(
+                    text = strings.appName,
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CafeHeader(strings = strings, compact = true)
-                }
+                    color = CoffeeBrownDark,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
 
                 if (trailingAction != null) {
                     trailingAction()
@@ -455,6 +459,51 @@ fun SectionTitle(title: String) {
             modifier = Modifier.weight(1f),
             color = CoffeeGold
         )
+    }
+}
+
+/** Capa neutra para cafés sem foto de produto, pronta para todos os idiomas. */
+@Composable
+fun CoffeePackagePlaceholder(
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(CoffeeBrownDark)
+            .border(1.dp, CoffeeGold.copy(alpha = 0.75f), RoundedCornerShape(18.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalCafe,
+                contentDescription = null,
+                tint = CoffeeGold,
+                modifier = Modifier.size(22.dp)
+            )
+            HorizontalDivider(color = CoffeeGold.copy(alpha = 0.65f))
+            Text(
+                text = label,
+                color = Color.White,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = label.uppercase(),
+                color = CoffeeGold,
+                fontSize = 8.sp,
+                letterSpacing = 1.sp,
+                maxLines = 1
+            )
+        }
     }
 }
 

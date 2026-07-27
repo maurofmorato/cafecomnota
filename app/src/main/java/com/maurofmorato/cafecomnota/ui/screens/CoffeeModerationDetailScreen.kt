@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -27,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,7 @@ import com.maurofmorato.cafecomnota.data.admin.ModerationCoffee
 import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
+import com.maurofmorato.cafecomnota.ui.components.CoffeePackagePlaceholder
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -106,7 +109,7 @@ fun CoffeeModerationDetailScreen(
             strings = strings,
             title = if (isAdmin) "Revisar café" else "Detalhes da contribuição",
             subtitle = if (isAdmin) {
-                "Confirme os dados, escolha a decisão e registre um motivo quando for necessário."
+                "Confira os dados, escolha uma decisão e só então salve."
             } else {
                 "Veja os dados enviados e o andamento da moderação."
             },
@@ -120,27 +123,40 @@ fun CoffeeModerationDetailScreen(
             colors = CardDefaults.cardColors(containerColor = CoffeeCard),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(Modifier.padding(16.dp)) {
-                Text(
-                    text = coffee.name,
-                    color = CoffeeBrownDark,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CoffeePackagePlaceholder(
+                    label = strings.coffeeWord,
+                    modifier = Modifier.size(width = 82.dp, height = 108.dp)
                 )
-                Text("${coffee.brand} • ${statusLabel(coffee.status)}", color = CoffeeMuted)
-                if (coffee.expectedPhotos > 0) {
-                    Spacer(Modifier.height(8.dp))
+                Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Fotos enviadas: ${coffee.uploadedPhotos}/${coffee.expectedPhotos} • ${statusLabel(coffee.photosStatus)}",
-                        color = CoffeeBrown,
-                        fontWeight = FontWeight.Medium
+                        text = coffee.name,
+                        color = CoffeeBrownDark,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                }
-                if (coffee.moderationReason.isNotBlank()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text("Motivo atual: ${coffee.moderationReason}", color = CoffeeMuted)
+                    Text(coffee.brand, color = CoffeeMuted)
+                    Spacer(Modifier.height(7.dp))
+                    FilterChip(
+                        selected = coffee.status == "pendente",
+                        onClick = {},
+                        label = { Text(statusLabel(coffee.status)) }
+                    )
+                    if (coffee.expectedPhotos > 0) {
+                        Spacer(Modifier.height(7.dp))
+                        Text(
+                            text = "${coffee.uploadedPhotos}/${coffee.expectedPhotos} fotos enviadas · ${statusLabel(coffee.photosStatus)}",
+                            color = CoffeeBrown,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -154,7 +170,7 @@ fun CoffeeModerationDetailScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Dados e decisão", color = CoffeeBrownDark, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                    Text("Dados e decisão", color = CoffeeBrownDark, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = name,
@@ -172,13 +188,13 @@ fun CoffeeModerationDetailScreen(
                         singleLine = true
                     )
                     Spacer(Modifier.height(12.dp))
-                    Text("Status", color = CoffeeBrownDark, fontWeight = FontWeight.Bold)
+                    Text("Decisão", color = CoffeeBrownDark, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
-                        listOf("pendente", "ativo", "oculto", "rejeitado").forEach { option ->
+                        listOf("ativo", "oculto", "rejeitado", "pendente").forEach { option ->
                             FilterChip(
                                 selected = status == option,
                                 onClick = { status = option },
@@ -187,7 +203,7 @@ fun CoffeeModerationDetailScreen(
                         }
                     }
                     Spacer(Modifier.height(10.dp))
-                    Text("Atalhos de motivo", color = CoffeeBrownDark, fontWeight = FontWeight.Bold)
+                    Text("Sugestões de motivo", color = CoffeeBrownDark, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
@@ -208,7 +224,7 @@ fun CoffeeModerationDetailScreen(
                         onValueChange = { reason = it },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2,
-                        label = { Text("Motivo da decisão") },
+                        label = { Text("Motivo da decisão (opcional)") },
                         supportingText = { Text("Recomendado ao ocultar, rejeitar ou remover.") }
                     )
                     Spacer(Modifier.height(12.dp))
@@ -217,7 +233,7 @@ fun CoffeeModerationDetailScreen(
                         enabled = !working && name.isNotBlank() && brand.isNotBlank(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(if (working) "Salvando…" else "Salvar alteração")
+                        Text(if (working) "Salvando…" else "Salvar decisão")
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(

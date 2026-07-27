@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +40,7 @@ import com.maurofmorato.cafecomnota.data.admin.ModerationCoffee
 import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
+import com.maurofmorato.cafecomnota.ui.components.CoffeePackagePlaceholder
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -112,15 +115,21 @@ fun CoffeeModerationScreen(
         .filter { it.status != "removido" }
         .groupingBy { moderationKey(it) }
         .eachCount()
+    val filteredCoffees = visibleCoffees.filter { coffee ->
+        when (selectedStatus) {
+            "todos" -> coffee.status != "removido"
+            else -> coffee.status == selectedStatus
+        }
+    }
 
     CafeResponsiveContent(innerPadding) {
         SubScreenHero(
             strings = strings,
             title = if (mineOnly) "Minhas contribuições" else "Fila de revisão",
             subtitle = if (mineOnly) {
-                "Acompanhe seus cafés, fotos e decisões da moderação."
+                "Acompanhe seus envios, fotos e decisões da moderação."
             } else {
-                "Comece pelos pendentes. Aprove rapidamente ou abra um café para uma revisão completa."
+                "Cafés aguardando sua decisão. Toque em Revisar para analisar com calma."
             },
             onBack = onBack
         )
@@ -132,37 +141,35 @@ fun CoffeeModerationScreen(
             verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             moderationStatuses.forEach { status ->
+                val count = when (status) {
+                    "todos" -> visibleCoffees.count { it.status != "removido" }
+                    else -> visibleCoffees.count { it.status == status }
+                }
                 FilterChip(
                     selected = selectedStatus == status,
                     onClick = { selectedStatus = status },
-                    label = {
-                        val count = when (status) {
-                            "todos" -> visibleCoffees.count { it.status != "removido" }
-                            else -> visibleCoffees.count { it.status == status }
-                        }
-                        Text("${statusLabel(status)} · $count")
-                    }
+                    label = { Text("${statusLabel(status)} · $count", maxLines = 1) }
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
 
+        Spacer(Modifier.height(12.dp))
         if (isLoading) {
-            Text("Atualizando a lista…", color = CoffeeMuted)
+            Text("Atualizando a fila…", color = CoffeeMuted)
+        } else {
+            Text(
+                text = if (mineOnly) "${filteredCoffees.size} café(s) neste filtro" else "${filteredCoffees.size} café(s) para revisar",
+                color = CoffeeMuted,
+                fontSize = 13.sp
+            )
         }
 
         if (message.isNotBlank()) {
-            ModerationNotice(message = message, onDismiss = { message = "" })
             Spacer(Modifier.height(10.dp))
+            ModerationNotice(message = message, onDismiss = { message = "" })
         }
 
-        val filteredCoffees = visibleCoffees.filter { coffee ->
-            when (selectedStatus) {
-                "todos" -> coffee.status != "removido"
-                else -> coffee.status == selectedStatus
-            }
-        }
-
+        Spacer(Modifier.height(10.dp))
         if (!isLoading && filteredCoffees.isEmpty()) {
             Text(
                 text = if (mineOnly) "Você ainda não tem contribuições neste filtro." else "Nenhum café nesta etapa da fila.",
@@ -173,6 +180,7 @@ fun CoffeeModerationScreen(
         filteredCoffees.forEach { coffee ->
             ModerationCoffeeListItem(
                 coffee = coffee,
+                packageLabel = strings.coffeeWord,
                 showAdminActions = isAdmin && !mineOnly,
                 isLikelyDuplicate = duplicateKeys[moderationKey(coffee)].orZero() > 1,
                 isWorking = actionCoffeeId == coffee.id,
@@ -184,14 +192,7 @@ fun CoffeeModerationScreen(
     }
 }
 
-private val moderationStatuses = listOf(
-    "pendente",
-    "todos",
-    "ativo",
-    "oculto",
-    "rejeitado",
-    "removido"
-)
+private val moderationStatuses = listOf("pendente", "todos", "ativo", "oculto", "rejeitado", "removido")
 
 internal fun statusLabel(status: String): String = when (status) {
     "todos" -> "Todos"
@@ -228,6 +229,7 @@ private fun ModerationNotice(message: String, onDismiss: () -> Unit) {
 @Composable
 private fun ModerationCoffeeListItem(
     coffee: ModerationCoffee,
+    packageLabel: String,
     showAdminActions: Boolean,
     isLikelyDuplicate: Boolean,
     isWorking: Boolean,
@@ -235,17 +237,20 @@ private fun ModerationCoffeeListItem(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = CoffeeCard),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(Modifier.padding(15.dp)) {
+        Column(Modifier.padding(14.dp)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("☕", fontSize = 28.sp)
+                CoffeePackagePlaceholder(
+                    label = packageLabel,
+                    modifier = Modifier.size(width = 72.dp, height = 96.dp)
+                )
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = coffee.name,
@@ -262,45 +267,35 @@ private fun ModerationCoffeeListItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(Modifier.height(6.dp))
+                    FilterChip(
+                        selected = coffee.status == "pendente",
+                        onClick = onClick,
+                        label = { Text(statusLabel(coffee.status)) }
+                    )
                 }
-                FilterChip(
-                    selected = false,
-                    onClick = onClick,
-                    label = { Text(statusLabel(coffee.status)) }
-                )
+                if (coffee.expectedPhotos > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Image, contentDescription = null, tint = CoffeeMuted, modifier = Modifier.size(17.dp))
+                        Spacer(Modifier.size(3.dp))
+                        Text("${coffee.uploadedPhotos}/${coffee.expectedPhotos}", color = CoffeeMuted, fontSize = 12.sp)
+                    }
+                }
             }
 
             if (isLikelyDuplicate && coffee.status != "removido") {
-                Spacer(Modifier.height(7.dp))
-                Text("Verificar duplicata: há outro café com nome e marca parecidos.", color = CoffeeBrown, fontSize = 13.sp)
-            }
-            if (coffee.expectedPhotos > 0) {
-                Spacer(Modifier.height(7.dp))
-                Text(
-                    text = "Fotos ${coffee.uploadedPhotos}/${coffee.expectedPhotos} · ${statusLabel(coffee.photosStatus)}",
-                    color = CoffeeMuted,
-                    fontSize = 13.sp
-                )
+                Spacer(Modifier.height(8.dp))
+                Text("Possível duplicata: confira nome e marca antes de publicar.", color = CoffeeBrown, fontSize = 13.sp)
             }
             if (coffee.moderationReason.isNotBlank()) {
-                Spacer(Modifier.height(5.dp))
-                Text(
-                    text = coffee.moderationReason,
-                    color = CoffeeMuted,
-                    fontSize = 13.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Spacer(Modifier.height(7.dp))
+                Text(coffee.moderationReason, color = CoffeeMuted, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
 
             Spacer(Modifier.height(11.dp))
             if (showAdminActions && coffee.status == "pendente") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = onApprove,
-                        enabled = !isWorking,
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Button(onClick = onApprove, enabled = !isWorking, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.Check, contentDescription = null)
                         Text(if (isWorking) "Aprovando…" else "Aprovar", modifier = Modifier.padding(start = 6.dp))
                     }
