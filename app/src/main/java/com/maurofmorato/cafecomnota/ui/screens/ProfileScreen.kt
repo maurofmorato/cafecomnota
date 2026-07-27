@@ -103,16 +103,23 @@ fun ProfileScreen(
         if (authSession != null && isAdmin) {
             Spacer(modifier = Modifier.height(18.dp))
 
-            SectionTitle(title = "Administração")
+            SectionTitle(title = "Ferramentas de moderador")
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            AdminCard()
+            AdminCard(onOpenAdministration = { onNavigate(AppDestination.CoffeeAdministration) })
+        }
+
+        if (authSession != null) {
+            Spacer(modifier = Modifier.height(18.dp))
+            SectionTitle(title = "Minha atividade")
+            Spacer(modifier = Modifier.height(10.dp))
+            ContributionsCard(onOpen = { onNavigate(AppDestination.MyContributions) })
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        SectionTitle(title = "Privacidade e conta")
+        SectionTitle(title = "Privacidade")
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -122,7 +129,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        SectionTitle(title = "Idioma")
+        SectionTitle(title = "Preferências")
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -546,7 +553,7 @@ private fun AccountCard(
 }
 
 @Composable
-private fun AdminCard() {
+private fun AdminCard(onOpenAdministration: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -570,7 +577,7 @@ private fun AdminCard() {
                 )
 
                 Text(
-                    text = "Administração ativa",
+                    text = "Fila de revisão",
                     color = CoffeeBrownDark,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -580,11 +587,37 @@ private fun AdminCard() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Este usuário pode moderar cafés pelo celular. Abra o detalhe de um café para ocultar ou marcar como pendente.",
+                text = "Revise primeiro os cafés pendentes. Você pode aprovar rapidamente ou abrir uma análise completa, sempre com auditoria.",
                 color = CoffeeMuted,
                 fontSize = 13.sp,
                 lineHeight = 17.sp
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(onClick = onOpenAdministration, modifier = Modifier.fillMaxWidth()) {
+                Text("Abrir fila de revisão")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContributionsCard(onOpen: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        androidx.compose.foundation.layout.Column(Modifier.padding(14.dp)) {
+            Text("Minhas contribuições", color = CoffeeBrownDark, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                "Veja se cada café está pendente, publicado ou precisa de uma nova tentativa de envio das fotos.",
+                color = CoffeeMuted, fontSize = 13.sp, lineHeight = 17.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(onClick = onOpen, modifier = Modifier.fillMaxWidth()) { Text("Ver contribuições") }
         }
     }
 }
