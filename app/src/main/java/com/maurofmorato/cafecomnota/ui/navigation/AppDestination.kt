@@ -45,5 +45,23 @@ enum class AppDestination(
         label = "Cadastrar",
         showInBottomBar = false,
         analyticsName = "add_coffee"
+    ),
+
+    MyContributions(
+        label = "Contribuições",
+        showInBottomBar = false,
+        analyticsName = "my_contributions"
+    ),
+
+    CoffeeAdministration(
+        label = "Administração",
+        showInBottomBar = false,
+        analyticsName = "coffee_administration"
+    ),
+
+    CoffeeAdministrationDetail(
+        label = "Conferir café",
+        showInBottomBar = false,
+        analyticsName = "coffee_administration_detail"
     )
 }

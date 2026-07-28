@@ -1,7 +1,7 @@
 # Café com nota 1.0.20 — bloco de autenticação e compartilhamento
 
 Versão Android: `1.0.20`  
-Version code: `14`
+Version code: `15`
 
 ## Incluído neste bloco
 
@@ -14,10 +14,11 @@ Version code: `14`
 - preservação de dados digitados quando for necessário autenticar novamente;
 - identificação de café semelhante durante o cadastro, com atalho para abrir o existente;
 - melhorias anteriores da 1.0.19: câmera/OCR, atualização pela Play, botão Voltar e visual das subtelas.
+- correção da interpretação do OCR, com correspondência ao catálogo e sem reaproveitar sugestões incertas.
 
 ## Link provisório usado no QR Code
 
-`https://play.google.com/apps/test/com.maurofmorato.cafecomnota/14`
+`https://play.google.com/apps/test/com.maurofmorato.cafecomnota/15`
 
 Antes da produção, esse endereço deverá ser substituído pelo endereço público definitivo da Play Store.
 
@@ -51,7 +52,7 @@ Select-String `
   -Pattern 'versionCode|versionName'
 ```
 
-O esperado é `versionCode = 14` e `versionName = "1.0.20"`.
+O esperado é `versionCode = 15` e `versionName = "1.0.20"`.
 
 ## Compilar e instalar no emulador
 

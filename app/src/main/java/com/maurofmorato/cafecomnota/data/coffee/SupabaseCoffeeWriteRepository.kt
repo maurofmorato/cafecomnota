@@ -11,10 +11,12 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class SupabaseCoffeeWriteRepository {
-    suspend fun createCoffee(
+    suspend fun createOrReuseCoffee(
         request: CoffeeCreateRequest
     ): String {
         return withContext(Dispatchers.IO) {
+            findCoffeeIdForSubmission(request)?.let { return@withContext it }
+
             val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/cafes"
 
             val body = JSONObject()
@@ -28,6 +30,13 @@ class SupabaseCoffeeWriteRepository {
                 .put("produto_rotulo", request.name.trim())
                 .put("status", request.status)
                 .put("cadastrado_por", request.userId)
+                .put("chave_envio", request.submissionKey)
+                .put("fotos_esperadas", request.photos.size)
+                .put("fotos_enviadas", 0)
+                .put(
+                    "fotos_status",
+                    if (request.photos.isEmpty()) "nao_solicitada" else "pendente"
+                )
 
             request.producer?.let { body.put("produtor", it) }
             request.originRegion?.let { body.put("origem_regiao", it) }
@@ -37,11 +46,36 @@ class SupabaseCoffeeWriteRepository {
             request.aromaFlavor?.let { body.put("aroma_sabor", it) }
             request.certification?.let { body.put("certificacao", it) }
 
-            executeInsert(
-                endpoint = endpoint,
-                accessToken = request.accessToken,
-                body = body
-            )
+            try {
+                executeInsert(endpoint, request.accessToken, body)
+            } catch (error: Throwable) {
+                // A resposta pode ter se perdido depois de o banco criar o café.
+                findCoffeeIdForSubmission(request) ?: throw error
+            }
+        }
+    }
+
+    private fun findCoffeeIdForSubmission(request: CoffeeCreateRequest): String? {
+        val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/cafes?select=id" +
+            "&cadastrado_por=eq.${encode(request.userId)}" +
+            "&chave_envio=eq.${encode(request.submissionKey)}&limit=1"
+        val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 12_000
+            readTimeout = 12_000
+            setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
+            setRequestProperty("Authorization", "Bearer ${request.accessToken}")
+            setRequestProperty("Accept", "application/json")
+        }
+
+        return try {
+            val code = connection.responseCode
+            if (code !in 200..299) return null
+            val response = connection.inputStream.bufferedReader().use { it.readText() }
+            parseInsertedCoffeeId(response)
+                .ifBlank { null }
+        } finally {
+            connection.disconnect()
         }
     }
 
@@ -130,4 +164,9 @@ class SupabaseCoffeeWriteRepository {
             "Não foi possível salvar o café."
         }
     }
+
+    private fun encode(value: String): String = java.net.URLEncoder.encode(
+        value,
+        java.nio.charset.StandardCharsets.UTF_8.toString()
+    )
 }

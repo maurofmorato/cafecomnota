@@ -9,6 +9,7 @@ data class CoffeeCreateRequest(
     val userId: String,
     val accessToken: String,
     val status: String,
+    val submissionKey: String,
     val producer: String? = null,
     val originRegion: String? = null,
     val altitudeMeters: Int? = null,

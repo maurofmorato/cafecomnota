@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.maurofmorato.cafecomnota.analytics.AnalyticsEvents
 import com.maurofmorato.cafecomnota.analytics.CafeAnalytics
+import com.maurofmorato.cafecomnota.data.admin.ModerationCoffee
 import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.data.auth.SupabaseAuthRepository
@@ -38,6 +39,8 @@ import com.maurofmorato.cafecomnota.ui.model.sampleCoffees
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.screens.AddCoffeeScreen
 import com.maurofmorato.cafecomnota.ui.screens.CoffeeDetailScreen
+import com.maurofmorato.cafecomnota.ui.screens.CoffeeModerationScreen
+import com.maurofmorato.cafecomnota.ui.screens.CoffeeModerationDetailScreen
 import com.maurofmorato.cafecomnota.ui.screens.HomeScreen
 import com.maurofmorato.cafecomnota.ui.screens.ProfileScreen
 import com.maurofmorato.cafecomnota.ui.screens.RankingScreen
@@ -91,6 +94,22 @@ fun CafeComNotaApp(
 
         var initialSearchQuery by rememberSaveable {
             mutableStateOf("")
+        }
+
+        var selectedModerationCoffee by remember {
+            mutableStateOf<ModerationCoffee?>(null)
+        }
+
+        var selectedModerationCanManage by remember {
+            mutableStateOf(false)
+        }
+
+        var moderationRefreshKey by remember {
+            mutableStateOf(0)
+        }
+
+        var hiddenModerationCoffeeIds by remember {
+            mutableStateOf<Set<String>>(emptySet())
         }
 
         var coffeesForUi by remember {
@@ -931,6 +950,66 @@ fun CafeComNotaApp(
                             }
                         }
                     )
+
+                    AppDestination.MyContributions -> CoffeeModerationScreen(
+                        innerPadding = innerPadding,
+                        strings = strings,
+                        authSession = authSession,
+                        isAdmin = false,
+                        mineOnly = true,
+                        refreshKey = moderationRefreshKey,
+                        hiddenCoffeeIds = hiddenModerationCoffeeIds,
+                        onOpenCoffee = { coffee ->
+                            selectedModerationCoffee = coffee
+                            selectedModerationCanManage = false
+                            navigateTo(
+                                newDestination = AppDestination.CoffeeAdministrationDetail,
+                                source = "my_contributions_open"
+                            )
+                        },
+                        onBack = { navigateBack("my_contributions_back") }
+                    )
+
+                    AppDestination.CoffeeAdministration -> CoffeeModerationScreen(
+                        innerPadding = innerPadding,
+                        strings = strings,
+                        authSession = authSession,
+                        isAdmin = isAdmin,
+                        mineOnly = false,
+                        refreshKey = moderationRefreshKey,
+                        hiddenCoffeeIds = hiddenModerationCoffeeIds,
+                        onOpenCoffee = { coffee ->
+                            selectedModerationCoffee = coffee
+                            selectedModerationCanManage = isAdmin
+                            navigateTo(
+                                newDestination = AppDestination.CoffeeAdministrationDetail,
+                                source = "coffee_administration_open"
+                            )
+                        },
+                        onBack = { navigateBack("coffee_administration_back") }
+                    )
+
+                    AppDestination.CoffeeAdministrationDetail -> {
+                        val moderationCoffee = selectedModerationCoffee
+                        if (moderationCoffee == null) {
+                            LaunchedEffect(Unit) { navigateBack("coffee_administration_missing") }
+                        } else {
+                            CoffeeModerationDetailScreen(
+                                innerPadding = innerPadding,
+                                strings = strings,
+                                authSession = authSession,
+                                coffee = moderationCoffee,
+                                isAdmin = selectedModerationCanManage,
+                                onBack = { navigateBack("coffee_administration_detail_back") },
+                                onChanged = { coffeeId, newStatus ->
+                                    if (newStatus == "removido") {
+                                        hiddenModerationCoffeeIds = hiddenModerationCoffeeIds + coffeeId
+                                    }
+                                    moderationRefreshKey += 1
+                                }
+                            )
+                        }
+                    }
                     }
                 }
             }
