@@ -201,9 +201,26 @@ class SupabaseCoffeeApi {
             0.0
         }
 
+        val detailedAroma = optDetailedRating("aroma_media")
+        val detailedFlavor = optDetailedRating("sabor_media")
+        val detailedBody = optDetailedRating("corpo_media")
+        val detailedBitterness = optDetailedRating("amargor_media")
+        val detailedAcidity = optDetailedRating("acidez_media")
+        val detailedSweetness = optDetailedRating("docura_media")
+        val detailedValueRating = optDetailedRating("custo_beneficio_media")
+        val hasDetailedRatings = listOf(
+            detailedAroma,
+            detailedFlavor,
+            detailedBody,
+            detailedBitterness,
+            detailedAcidity,
+            detailedSweetness,
+            detailedValueRating
+        ).any { value -> value != null }
+
         val tags = buildTags(type, roast, category, certification, normalizedRating, priceKg)
 
-        val valueRating = when {
+        val calculatedValueRating = when {
             normalizedRating <= 0.0 -> 0.0
             priceKg <= 0.0 -> normalizedRating
             priceKg <= 60.0 -> (normalizedRating + 0.5).coerceAtMost(5.0)
@@ -223,13 +240,14 @@ class SupabaseCoffeeApi {
             wouldBuyAgainPercent = wouldBuyAgainPercent,
             description = buildDescription(name, brand, totalReviews, totalPriceRecords),
             tags = tags,
-            aroma = normalizedRating,
-            flavor = normalizedRating,
-            body = normalizedRating,
-            acidity = if (normalizedRating > 0.0) (normalizedRating - 0.2).coerceAtLeast(1.0) else 0.0,
-            bitterness = if (normalizedRating > 0.0) (5.2 - normalizedRating).coerceIn(1.0, 5.0) else 0.0,
-            sweetness = if (normalizedRating > 0.0) (normalizedRating - 0.1).coerceAtLeast(1.0) else 0.0,
-            valueRating = valueRating,
+            aroma = detailedAroma ?: 0.0,
+            flavor = detailedFlavor ?: 0.0,
+            body = detailedBody ?: 0.0,
+            acidity = detailedAcidity ?: 0.0,
+            bitterness = detailedBitterness ?: 0.0,
+            sweetness = detailedSweetness ?: 0.0,
+            valueRating = detailedValueRating ?: calculatedValueRating,
+            hasDetailedRatings = hasDetailedRatings,
             price250g = price250g,
             lastPriceDate = lastPriceDate,
             totalPriceRecords = totalPriceRecords,
@@ -290,6 +308,12 @@ class SupabaseCoffeeApi {
             }
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private fun JSONObject.optDetailedRating(name: String): Double? {
+        return optDoubleOrNull(name)?.takeIf { value ->
+            value in 1.0..5.0
         }
     }
 

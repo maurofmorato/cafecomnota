@@ -216,7 +216,7 @@ fun CoffeeDetailScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (coffee.hasRating) {
+        if (coffee.hasDetailedRatings) {
             RatingMetric(title = "Aroma", value = coffee.aroma)
             RatingMetric(title = "Sabor", value = coffee.flavor)
             RatingMetric(title = "Corpo", value = coffee.body)
@@ -226,7 +226,7 @@ fun CoffeeDetailScreen(
             RatingMetric(title = strings.shortcutBestValue, value = coffee.valueRating)
         } else {
             Text(
-                text = "As notas detalhadas aparecerão depois das primeiras avaliações.",
+                text = "As notas detalhadas aparecerão quando a comunidade avaliar estes critérios.",
                 color = CoffeeMuted,
                 fontSize = 15.sp
             )

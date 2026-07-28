@@ -37,6 +37,13 @@ class SupabaseReviewRepository {
             val result = ExistingReviewData(
                 rating = review?.optNullableDouble("nota_geral"),
                 wouldBuyAgain = review?.optNullableBoolean("compraria_novamente"),
+                aroma = review?.optNullableInt("aroma"),
+                flavor = review?.optNullableInt("sabor"),
+                body = review?.optNullableInt("corpo"),
+                bitterness = review?.optNullableInt("amargor"),
+                acidity = review?.optNullableInt("acidez"),
+                sweetness = review?.optNullableInt("docura"),
+                valueRating = review?.optNullableInt("custo_beneficio"),
                 pricePaid = currentPrice?.optNullableDouble("preco_pago")
                     ?: review?.optNullableDouble("preco_pago"),
                 weightGrams = currentPrice?.optNullableDouble("peso_g")
@@ -73,7 +80,7 @@ class SupabaseReviewRepository {
         accessToken: String
     ): JSONObject? {
         val query = listOf(
-            "select=nota_geral,compraria_novamente,metodo_preparo,comentario,preco_pago,peso_g,created_at,updated_at",
+            "select=nota_geral,compraria_novamente,aroma,sabor,corpo,amargor,acidez,docura,custo_beneficio,metodo_preparo,comentario,preco_pago,peso_g,created_at,updated_at",
             "cafe_id=eq.${encode(cafeId)}",
             "usuario_id=eq.${encode(userId)}",
             "limit=1"
@@ -117,6 +124,14 @@ class SupabaseReviewRepository {
             .put("nota_geral", request.rating)
             .put("compraria_novamente", request.wouldBuyAgain)
             .put("metodo_preparo", request.brewMethod.ifBlank { "nao_informado" })
+
+        body.putNullableInt("aroma", request.aroma)
+        body.putNullableInt("sabor", request.flavor)
+        body.putNullableInt("corpo", request.body)
+        body.putNullableInt("amargor", request.bitterness)
+        body.putNullableInt("acidez", request.acidity)
+        body.putNullableInt("docura", request.sweetness)
+        body.putNullableInt("custo_beneficio", request.valueRating)
 
         if (request.comment.isBlank()) {
             body.put("comentario", JSONObject.NULL)
@@ -316,5 +331,21 @@ class SupabaseReviewRepository {
         } catch (_: Exception) {
             null
         }
+    }
+
+    private fun JSONObject.optNullableInt(name: String): Int? {
+        if (isNull(name)) return null
+        return try {
+            getInt(name)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun JSONObject.putNullableInt(
+        name: String,
+        value: Int?
+    ) {
+        put(name, value ?: JSONObject.NULL)
     }
 }

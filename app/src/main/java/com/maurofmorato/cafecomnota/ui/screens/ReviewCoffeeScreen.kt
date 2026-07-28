@@ -86,6 +86,14 @@ fun ReviewCoffeeScreen(
 
     var rating by rememberSaveable { mutableFloatStateOf(4.0f) }
     var wouldBuyAgain by rememberSaveable { mutableStateOf(true) }
+    var hasDetailedRatings by rememberSaveable { mutableStateOf(false) }
+    var aroma by rememberSaveable { mutableStateOf(4) }
+    var flavor by rememberSaveable { mutableStateOf(4) }
+    var body by rememberSaveable { mutableStateOf(4) }
+    var bitterness by rememberSaveable { mutableStateOf(3) }
+    var acidity by rememberSaveable { mutableStateOf(3) }
+    var sweetness by rememberSaveable { mutableStateOf(3) }
+    var valueRating by rememberSaveable { mutableStateOf(4) }
     var priceText by rememberSaveable { mutableStateOf("") }
     var weightText by rememberSaveable { mutableStateOf("250") }
     var brewMethod by rememberSaveable { mutableStateOf("nao_informado") }
@@ -118,6 +126,15 @@ fun ReviewCoffeeScreen(
                 existingReview.wouldBuyAgain?.let {
                     wouldBuyAgain = it
                 }
+
+                hasDetailedRatings = existingReview.hasDetailedRatings
+                existingReview.aroma?.let { aroma = it }
+                existingReview.flavor?.let { flavor = it }
+                existingReview.body?.let { body = it }
+                existingReview.bitterness?.let { bitterness = it }
+                existingReview.acidity?.let { acidity = it }
+                existingReview.sweetness?.let { sweetness = it }
+                existingReview.valueRating?.let { valueRating = it }
 
                 existingReview.pricePaid?.let {
                     priceText = formatDecimalForInput(it.toString())
@@ -231,6 +248,27 @@ fun ReviewCoffeeScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        DetailedRatingsCard(
+            enabled = hasDetailedRatings,
+            onEnabledChange = { hasDetailedRatings = it },
+            aroma = aroma,
+            onAromaChange = { aroma = it },
+            flavor = flavor,
+            onFlavorChange = { flavor = it },
+            body = body,
+            onBodyChange = { body = it },
+            bitterness = bitterness,
+            onBitternessChange = { bitterness = it },
+            acidity = acidity,
+            onAcidityChange = { acidity = it },
+            sweetness = sweetness,
+            onSweetnessChange = { sweetness = it },
+            valueRating = valueRating,
+            onValueRatingChange = { valueRating = it }
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -359,6 +397,7 @@ fun ReviewCoffeeScreen(
                     params = mapOf(
                         "coffee_id" to coffeeId,
                         "has_price" to (pricePaid != null && weightGrams != null),
+                        "has_detailed_ratings" to hasDetailedRatings,
                         "rating" to rating.toDouble(),
                         "price_paid" to pricePaid,
                         "weight_grams" to weightGrams,
@@ -375,6 +414,13 @@ fun ReviewCoffeeScreen(
                                 accessToken = authSession.accessToken,
                                 rating = rating.toDouble(),
                                 wouldBuyAgain = wouldBuyAgain,
+                                aroma = aroma.takeIf { hasDetailedRatings },
+                                flavor = flavor.takeIf { hasDetailedRatings },
+                                body = body.takeIf { hasDetailedRatings },
+                                bitterness = bitterness.takeIf { hasDetailedRatings },
+                                acidity = acidity.takeIf { hasDetailedRatings },
+                                sweetness = sweetness.takeIf { hasDetailedRatings },
+                                valueRating = valueRating.takeIf { hasDetailedRatings },
                                 pricePaid = pricePaid,
                                 weightGrams = weightGrams,
                                 brewMethod = brewMethod,
@@ -387,6 +433,7 @@ fun ReviewCoffeeScreen(
                             params = mapOf(
                                 "coffee_id" to coffeeId,
                                 "has_price" to (pricePaid != null && weightGrams != null),
+                                "has_detailed_ratings" to hasDetailedRatings,
                                 "rating" to rating.toDouble(),
                                 "price_paid" to pricePaid,
                                 "weight_grams" to weightGrams,
@@ -440,6 +487,112 @@ fun ReviewCoffeeScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
     }
+}
+
+@Composable
+private fun DetailedRatingsCard(
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    aroma: Int,
+    onAromaChange: (Int) -> Unit,
+    flavor: Int,
+    onFlavorChange: (Int) -> Unit,
+    body: Int,
+    onBodyChange: (Int) -> Unit,
+    bitterness: Int,
+    onBitternessChange: (Int) -> Unit,
+    acidity: Int,
+    onAcidityChange: (Int) -> Unit,
+    sweetness: Int,
+    onSweetnessChange: (Int) -> Unit,
+    valueRating: Int,
+    onValueRatingChange: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = "Notas detalhadas",
+                color = CoffeeBrownDark,
+                style = TitleTextStyle
+            )
+
+            Spacer(modifier = Modifier.height(5.dp))
+
+            Text(
+                text = "Opcional. Avalie somente quando você se sentir seguro sobre os critérios.",
+                color = CoffeeMuted,
+                style = BodyTextStyle,
+                lineHeight = 17.sp
+            )
+
+            Spacer(modifier = Modifier.height(9.dp))
+
+            CompactFilterChip(
+                modifier = Modifier.fillMaxWidth(),
+                selected = enabled,
+                text = if (enabled) "Notas detalhadas ativadas" else "Informar notas detalhadas",
+                onClick = { onEnabledChange(!enabled) }
+            )
+
+            if (enabled) {
+                Spacer(modifier = Modifier.height(12.dp))
+                DetailedRatingSlider("Aroma", aroma, onAromaChange)
+                DetailedRatingSlider("Sabor", flavor, onFlavorChange)
+                DetailedRatingSlider("Corpo", body, onBodyChange)
+                DetailedRatingSlider("Amargor", bitterness, onBitternessChange)
+                DetailedRatingSlider("Acidez", acidity, onAcidityChange)
+                DetailedRatingSlider("Doçura", sweetness, onSweetnessChange)
+                DetailedRatingSlider("Custo-benefício", valueRating, onValueRatingChange)
+
+                Text(
+                    text = "Desative esta opção para remover suas notas detalhadas ao salvar.",
+                    color = CoffeeMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailedRatingSlider(
+    label: String,
+    value: Int,
+    onValueChange: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            color = CoffeeBrownDark,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Text(
+            text = "$value / 5",
+            color = CoffeeBrown,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+
+    Slider(
+        value = value.toFloat(),
+        onValueChange = { newValue ->
+            onValueChange(newValue.toInt().coerceIn(1, 5))
+        },
+        valueRange = 1f..5f,
+        steps = 3
+    )
 }
 
 @Composable

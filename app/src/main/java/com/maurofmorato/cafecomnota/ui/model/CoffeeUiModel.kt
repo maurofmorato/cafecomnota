@@ -19,6 +19,7 @@ data class CoffeeUiModel(
     val bitterness: Double,
     val sweetness: Double,
     val valueRating: Double,
+    val hasDetailedRatings: Boolean = false,
     val price250g: Double = if (priceKg > 0.0) priceKg / 4.0 else 0.0,
     val lastPriceDate: String? = null,
     val totalPriceRecords: Int = 0,
@@ -83,6 +84,7 @@ fun sampleCoffees(): List<CoffeeUiModel> {
             bitterness = 2.7,
             sweetness = 4.2,
             valueRating = 4.6,
+            hasDetailedRatings = true,
             lastPriceDate = "2026-06-01",
             totalPriceRecords = 4
         ),
