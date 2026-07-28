@@ -2,17 +2,23 @@ package com.maurofmorato.cafecomnota.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -39,6 +45,7 @@ import com.maurofmorato.cafecomnota.ui.components.MainActionCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.ShortcutChip
 import com.maurofmorato.cafecomnota.ui.components.ShortcutType
+import com.maurofmorato.cafecomnota.ui.i18n.AppLanguage
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.model.topRatedCoffees
@@ -53,8 +60,10 @@ import com.maurofmorato.cafecomnota.ui.theme.CoffeeMuted
 fun HomeScreen(
     innerPadding: PaddingValues,
     strings: AppStrings,
+    currentLanguage: AppLanguage,
     coffees: List<CoffeeUiModel>,
     onNavigate: (AppDestination) -> Unit,
+    onLanguageChange: (AppLanguage) -> Unit,
     onSearch: (String) -> Unit,
     onOpenCoffee: (String) -> Unit
 ) {
@@ -66,7 +75,15 @@ fun HomeScreen(
     ) {
         CafeHeader(strings = strings)
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        HomeLanguageCard(
+            strings = strings,
+            currentLanguage = currentLanguage,
+            onLanguageChange = onLanguageChange
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         VersionShareRow(
             onShowQrCode = { showAppShareDialog.value = true }
@@ -136,7 +153,7 @@ fun HomeScreen(
 
         if (rankedCoffees.isEmpty()) {
             Text(
-                text = "O ranking aparecerá depois das primeiras avaliações. Use a busca para ver o catálogo inicial.",
+                text = strings.searchNoCoffeeFound,
                 color = CoffeeMuted
             )
         } else {
@@ -196,6 +213,49 @@ fun HomeScreen(
 }
 
 @Composable
+private fun HomeLanguageCard(
+    strings: AppStrings,
+    currentLanguage: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CoffeeCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = strings.profileLanguage,
+                color = CoffeeBrown,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = strings.profileLanguageInfo,
+                color = CoffeeMuted,
+                fontSize = 12.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Clip
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(AppLanguage.values().toList()) { language ->
+                    FilterChip(
+                        selected = currentLanguage == language,
+                        onClick = { onLanguageChange(language) },
+                        label = { Text(language.nativeName, maxLines = 1) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun VersionShareRow(
     onShowQrCode: () -> Unit
 ) {
@@ -227,7 +287,7 @@ private fun VersionShareRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Versão $versionName",
+                text = versionName,
                 color = CoffeeMuted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
@@ -241,7 +301,7 @@ private fun VersionShareRow(
         IconButton(onClick = onShowQrCode) {
             Icon(
                 imageVector = Icons.Default.QrCode2,
-                contentDescription = "Compartilhar Café com nota por QR Code",
+                contentDescription = "QR Code",
                 tint = CoffeeBrown
             )
         }

@@ -48,6 +48,7 @@ import com.maurofmorato.cafecomnota.data.review.ReviewSaveRequest
 import com.maurofmorato.cafecomnota.data.review.SupabaseReviewRepository
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
+import com.maurofmorato.cafecomnota.ui.components.CafeMessageCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.components.formatRating
@@ -415,7 +416,7 @@ fun ReviewCoffeeScreen(
                             )
                         )
 
-                        message = throwable.message ?: "Não foi possível salvar a avaliação."
+                        message = "Não foi possível concluir esta ação agora. Tente novamente."
                     } finally {
                         isSaving = false
                     }
@@ -434,7 +435,7 @@ fun ReviewCoffeeScreen(
 
         if (message.isNotBlank()) {
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = message, color = CoffeeBrown, fontSize = 13.sp, lineHeight = 17.sp)
+            CafeMessageCard(message = message)
         }
 
         Spacer(modifier = Modifier.height(10.dp))

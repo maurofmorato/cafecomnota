@@ -47,6 +47,7 @@ import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
+import com.maurofmorato.cafecomnota.ui.components.CafeMessageCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.components.formatPrice250g
@@ -285,7 +286,7 @@ private fun AdminModerationCard(
                 message = "Status atualizado para $newStatus."
                 onCoffeeModerated()
             } catch (throwable: Throwable) {
-                message = throwable.message ?: "Não foi possível moderar este café."
+                message = "Não foi possível concluir esta ação agora. Tente novamente."
             } finally {
                 isWorking = false
             }
@@ -378,12 +379,7 @@ private fun AdminModerationCard(
             if (message.isNotBlank()) {
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = message,
-                    color = CoffeeBrown,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
-                )
+                CafeMessageCard(message = message)
             }
         }
     }

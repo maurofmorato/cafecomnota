@@ -68,6 +68,7 @@ import com.maurofmorato.cafecomnota.data.coffee.SupabaseCoffeePhotoRepository
 import com.maurofmorato.cafecomnota.data.coffee.SupabaseCoffeeWriteRepository
 import com.maurofmorato.cafecomnota.ui.components.CafeHeader
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
+import com.maurofmorato.cafecomnota.ui.components.CafeMessageCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
@@ -877,7 +878,7 @@ fun AddCoffeeScreen(
 
                         onSaved()
                     } catch (throwable: AuthenticationExpiredException) {
-                        onRequireLogin(throwable.message ?: "Sua sessão expirou. Entre novamente para continuar.")
+                        onRequireLogin("Sua sessão expirou. Entre novamente para continuar.")
                     } catch (throwable: Throwable) {
                         CafeAnalytics.recordNonFatal(
                             throwable = throwable,
@@ -894,7 +895,7 @@ fun AddCoffeeScreen(
                             )
                         )
 
-                        message = throwable.message ?: "Não foi possível salvar o café."
+                        message = "Não foi possível concluir esta ação agora. Tente novamente."
                     } finally {
                         isSaving = false
                     }
@@ -912,7 +913,7 @@ fun AddCoffeeScreen(
 
         if (message.isNotBlank()) {
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = message, color = CoffeeBrown, fontSize = 14.sp, lineHeight = 18.sp)
+            CafeMessageCard(message = message)
         }
 
         Spacer(modifier = Modifier.height(10.dp))

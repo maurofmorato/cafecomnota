@@ -145,24 +145,9 @@ class SupabaseCoffeeWriteRepository {
     private fun parseErrorMessage(
         responseBody: String
     ): String {
-        if (responseBody.isBlank()) {
-            return "Não foi possível salvar o café."
-        }
-
-        return try {
-            val json = JSONObject(responseBody)
-
-            val message = json.optString("message")
-                .ifBlank { json.optString("msg") }
-                .ifBlank { json.optString("hint") }
-                .ifBlank { json.optString("details") }
-
-            message.ifBlank {
-                "Não foi possível salvar o café."
-            }
-        } catch (_: Exception) {
-            "Não foi possível salvar o café."
-        }
+        // A resposta do banco pode conter SQL, JWT ou detalhes internos.
+        // A tela exibe apenas uma orientação segura ao usuário.
+        return "Não foi possível concluir esta ação agora. Tente novamente."
     }
 
     private fun encode(value: String): String = java.net.URLEncoder.encode(

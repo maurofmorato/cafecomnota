@@ -322,7 +322,7 @@ fun CafeComNotaApp(
                     }
                 } catch (throwable: Throwable) {
                     isAdmin = false
-                    adminMessage = throwable.message ?: "Não foi possível verificar permissão administrativa."
+                    adminMessage = friendlyErrorMessage(throwable, strings)
 
                     CafeAnalytics.recordNonFatal(
                         throwable = throwable,
@@ -391,7 +391,7 @@ fun CafeComNotaApp(
                         )
                     )
 
-                    loginMessage = throwable.message ?: "Não foi possível fazer login."
+                    loginMessage = friendlyErrorMessage(throwable, strings)
                 } finally {
                     isLoggingIn = false
                 }
@@ -452,7 +452,7 @@ fun CafeComNotaApp(
                     )
                 )
             } catch (throwable: Throwable) {
-                loginMessage = throwable.message ?: "Não foi possível abrir o login do Google."
+                loginMessage = friendlyErrorMessage(throwable, strings)
 
                 CafeAnalytics.recordNonFatal(
                     throwable = throwable,
@@ -494,7 +494,7 @@ fun CafeComNotaApp(
                         )
                     )
                 } catch (throwable: Throwable) {
-                    loginMessage = throwable.message ?: "Não foi possível enviar recuperação de senha."
+                    loginMessage = friendlyErrorMessage(throwable, strings)
 
                     CafeAnalytics.recordNonFatal(
                         throwable = throwable,
@@ -553,7 +553,7 @@ fun CafeComNotaApp(
                         )
                     )
                 } catch (throwable: Throwable) {
-                    loginMessage = throwable.message ?: "Não foi possível alterar a senha."
+                    loginMessage = friendlyErrorMessage(throwable, strings)
 
                     CafeAnalytics.recordNonFatal(
                         throwable = throwable,
@@ -629,7 +629,7 @@ fun CafeComNotaApp(
                         )
                     )
                 } catch (throwable: Throwable) {
-                    loginMessage = throwable.message ?: "Não foi possível concluir a autenticação."
+                    loginMessage = friendlyErrorMessage(throwable, strings)
 
                     CafeAnalytics.recordNonFatal(
                         throwable = throwable,
@@ -794,6 +794,7 @@ fun CafeComNotaApp(
                     AppDestination.Home -> HomeScreen(
                         innerPadding = innerPadding,
                         strings = strings,
+                        currentLanguage = currentLanguage,
                         coffees = coffeesForUi,
                         onNavigate = {
                             when {
@@ -817,6 +818,7 @@ fun CafeComNotaApp(
                                 )
                             }
                         },
+                        onLanguageChange = ::changeLanguage,
                         onSearch = ::searchFromHome,
                         onOpenCoffee = ::openCoffeeDetail
                     )
@@ -856,7 +858,6 @@ fun CafeComNotaApp(
                         isLoggingIn = isLoggingIn,
                         loginMessage = loginMessage,
                         isAdmin = isAdmin,
-                        onLanguageChange = ::changeLanguage,
                         onLogin = ::doLogin,
                         onGoogleLogin = ::doGoogleLogin,
                         onRequestPasswordReset = ::doRequestPasswordReset,
@@ -1022,5 +1023,27 @@ private fun ensureSafeCoffeeList(
 ): List<CoffeeUiModel> {
     return coffees.ifEmpty {
         sampleCoffees()
+    }
+}
+
+
+private fun friendlyErrorMessage(
+    throwable: Throwable,
+    strings: com.maurofmorato.cafecomnota.ui.i18n.AppStrings
+): String {
+    val technicalMessage = throwable.message.orEmpty().lowercase()
+    return when {
+        technicalMessage.contains("jwt") ||
+            technicalMessage.contains("token") ||
+            technicalMessage.contains("expired") ||
+            technicalMessage.contains("401") -> strings.messageSessionExpired
+
+        technicalMessage.contains("timeout") ||
+            technicalMessage.contains("network") ||
+            technicalMessage.contains("connect") ||
+            technicalMessage.contains("socket") ||
+            technicalMessage.contains("503") -> strings.messageConnection
+
+        else -> strings.messageActionFailed
     }
 }

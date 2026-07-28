@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
+import com.maurofmorato.cafecomnota.ui.components.CafeMessageCard
 import com.maurofmorato.cafecomnota.ui.components.SectionTitle
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.components.responsiveTextSize
@@ -71,7 +72,6 @@ fun ProfileScreen(
     isLoggingIn: Boolean,
     loginMessage: String,
     isAdmin: Boolean,
-    onLanguageChange: (AppLanguage) -> Unit,
     onLogin: (String, String) -> Unit,
     onGoogleLogin: () -> Unit,
     onRequestPasswordReset: (String) -> Unit,
@@ -81,7 +81,6 @@ fun ProfileScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val showPasswordFields = remember { mutableStateOf(false) }
-    val showLanguageChoices = remember { mutableStateOf(false) }
     val copy = profileCopyFor(currentLanguage)
 
     CafeResponsiveContent(
@@ -137,29 +136,6 @@ fun ProfileScreen(
             SectionTitle(title = copy.preferences)
             Spacer(modifier = Modifier.height(10.dp))
             ProfileMenuCard {
-                ProfileMenuRow(
-                    icon = Icons.Default.Language,
-                    title = strings.profileLanguage,
-                    trailingText = currentLanguage.nativeName,
-                    onClick = { showLanguageChoices.value = !showLanguageChoices.value }
-                )
-                if (showLanguageChoices.value) {
-                    HorizontalDivider(color = CoffeeLine)
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        AppLanguage.values().forEach { language ->
-                            FilterChip(
-                                selected = currentLanguage == language,
-                                onClick = {
-                                    onLanguageChange(language)
-                                    showLanguageChoices.value = false
-                                },
-                                label = { Text(language.nativeName) },
-                                modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
-                            )
-                        }
-                    }
-                }
-                HorizontalDivider(color = CoffeeLine)
                 ProfileMenuRow(
                     icon = Icons.Default.Lock,
                     title = copy.privacy,
@@ -344,7 +320,10 @@ private fun ProfileSecurityCard(
             Text(copy.logout, modifier = Modifier.padding(start = 8.dp))
         }
         TextButton(onClick = onRequestDeletion, modifier = Modifier.fillMaxWidth()) { Text(copy.deleteAccount) }
-        if (message.isNotBlank()) Text(message, color = CoffeeBrown, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+        if (message.isNotBlank()) {
+            Spacer(Modifier.height(8.dp))
+            CafeMessageCard(message = message)
+        }
     }
 }
 
@@ -653,12 +632,7 @@ private fun AuthCard(
             if (loginMessage.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = loginMessage,
-                    color = CoffeeBrown,
-                    fontSize = 13.sp,
-                    lineHeight = 17.sp
-                )
+                CafeMessageCard(message = loginMessage)
             }
         }
     }

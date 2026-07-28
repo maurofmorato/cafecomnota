@@ -21,7 +21,7 @@ class SupabaseAdminRepository {
             "fotos_esperadas,fotos_enviadas,fotos_status&order=cadastrado_em.desc$filter"
         val response = executeRequest(endpoint, accessToken, "GET", JSONObject(), null)
         val array = JSONArray(response)
-        buildList {
+        val coffees = buildList {
             for (index in 0 until array.length()) {
                 val item = array.getJSONObject(index)
                 add(
@@ -40,7 +40,44 @@ class SupabaseAdminRepository {
                 )
             }
         }
+        val photos = runCatching { loadPhotoPaths(accessToken) }.getOrDefault(emptyMap())
+        coffees.map { coffee -> coffee.copy(imagePath = photos[coffee.id]) }
     }
+
+    private fun loadPhotoPaths(accessToken: String): Map<String, String> {
+        val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/cafe_fotos?select=" +
+            "cafe_id,storage_path,rotulo,ordem&order=cafe_id.asc,ordem.asc"
+        val array = JSONArray(executeRequest(endpoint, accessToken, "GET", JSONObject(), null))
+        val photosByCoffee = mutableMapOf<String, MutableList<AdminPhotoReference>>()
+
+        for (index in 0 until array.length()) {
+            val item = array.optJSONObject(index) ?: continue
+            val cafeId = item.optString("cafe_id").trim()
+            val path = item.optString("storage_path").trim()
+            if (cafeId.isBlank() || path.isBlank()) continue
+            photosByCoffee.getOrPut(cafeId) { mutableListOf() }.add(
+                AdminPhotoReference(
+                    storagePath = path,
+                    label = item.optString("rotulo").trim(),
+                    order = item.optInt("ordem", Int.MAX_VALUE)
+                )
+            )
+        }
+
+        return photosByCoffee.mapValues { (_, photos) ->
+            photos.sortedWith(
+                compareBy<AdminPhotoReference> {
+                    if (it.label.equals("frente", ignoreCase = true)) 0 else 1
+                }.thenBy { it.order }
+            ).first().storagePath
+        }
+    }
+
+    private data class AdminPhotoReference(
+        val storagePath: String,
+        val label: String,
+        val order: Int
+    )
 
     suspend fun isCurrentUserAdmin(
         accessToken: String
@@ -163,20 +200,7 @@ class SupabaseAdminRepository {
             return "Operação administrativa não autorizada."
         }
 
-        return try {
-            val json = JSONObject(responseBody)
-
-            val message = json.optString("message")
-                .ifBlank { json.optString("msg") }
-                .ifBlank { json.optString("hint") }
-                .ifBlank { json.optString("details") }
-
-            message.ifBlank {
-                "Operação administrativa não autorizada."
-            }
-        } catch (_: Exception) {
-            "Operação administrativa não autorizada."
-        }
+        return "Operação administrativa indisponível no momento."
     }
 
     private fun encode(

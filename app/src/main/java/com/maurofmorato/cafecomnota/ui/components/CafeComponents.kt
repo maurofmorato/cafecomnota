@@ -37,10 +37,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -55,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.R
+import com.maurofmorato.cafecomnota.data.supabase.SupabaseCoffeeImageLoader
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
 import com.maurofmorato.cafecomnota.ui.navigation.AppDestination
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -91,8 +95,10 @@ fun responsiveTextSize(
     val screenWidth = LocalConfiguration.current.screenWidthDp.toFloat()
     val fontScale = LocalDensity.current.fontScale
     val widthFactor = (screenWidth / 412f).coerceIn(0.82f, 1f)
-    val scaleCompensation = if (fontScale > 1.15f) 1.15f / fontScale else 1f
-    return (baseSp * minOf(widthFactor, scaleCompensation))
+    // Em telas pequenas a hierarquia continua legível; em fontes muito altas
+    // evitamos que uma única linha desloque controles inteiros para fora da tela.
+    val fontScaleFactor = if (fontScale > 1.30f) 1.30f / fontScale else 1f
+    return (baseSp * widthFactor * fontScaleFactor)
         .coerceAtLeast(minimumSp)
         .sp
 }
@@ -182,10 +188,11 @@ private fun BottomItem(
         Text(
             text = label,
             color = itemColor,
-            fontSize = 11.sp,
+            fontSize = responsiveTextSize(11f, 9f),
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Clip
         )
     }
 }
@@ -374,8 +381,8 @@ fun MainActionCard(
                 Text(
                     text = title,
                     color = CoffeeBrownDark,
-                    fontSize = 17.sp,
-                    lineHeight = 21.sp,
+                    fontSize = responsiveTextSize(17f, 14f),
+                    lineHeight = responsiveTextSize(21f, 17f),
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -385,8 +392,8 @@ fun MainActionCard(
                     Text(
                         text = subtitle,
                         color = CoffeeMuted,
-                        fontSize = 13.sp,
-                        lineHeight = 17.sp,
+                        fontSize = responsiveTextSize(13f, 11f),
+                        lineHeight = responsiveTextSize(17f, 14f),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -452,37 +459,68 @@ private fun ActionArtwork(iconType: ActionIcon) {
 }
 
 @Composable
-fun SectionTitle(title: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+fun CafeMessageCard(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CoffeeGold.copy(alpha = 0.16f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.LocalCafe,
-            contentDescription = null,
-            tint = CoffeeBrown,
-            modifier = Modifier.size(20.dp)
-        )
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalCafe,
+                contentDescription = null,
+                tint = CoffeeBrown,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = message,
+                modifier = Modifier.weight(1f),
+                color = CoffeeBrownDark,
+                fontSize = responsiveTextSize(13f, 11f),
+                lineHeight = responsiveTextSize(18f, 15f)
+            )
+        }
+    }
+}
 
-        Spacer(modifier = Modifier.width(7.dp))
+@Composable
+fun SectionTitle(title: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.LocalCafe,
+                contentDescription = null,
+                tint = CoffeeBrown,
+                modifier = Modifier.size(20.dp)
+            )
 
-        Text(
-            modifier = Modifier.weight(1f, fill = false),
-            text = title,
-            color = CoffeeBrownDark,
-            fontSize = responsiveTextSize(20f, 16f),
-            lineHeight = responsiveTextSize(23f, 19f),
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Serif,
-            maxLines = 1,
-            softWrap = false,
-            overflow = TextOverflow.Ellipsis
-        )
+            Spacer(modifier = Modifier.width(7.dp))
 
-        Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                modifier = Modifier.weight(1f),
+                text = title,
+                color = CoffeeBrownDark,
+                fontSize = responsiveTextSize(20f, 16f),
+                lineHeight = responsiveTextSize(24f, 19f),
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Serif,
+                maxLines = 2,
+                overflow = TextOverflow.Clip
+            )
+        }
 
         HorizontalDivider(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .padding(start = 27.dp, top = 6.dp)
+                .fillMaxWidth(),
             color = CoffeeGold
         )
     }
@@ -522,6 +560,35 @@ fun CoffeePackagePlaceholder(
 }
 
 @Composable
+fun CoffeePackageImage(
+    imagePath: String?,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    val bitmap by produceState<android.graphics.Bitmap?>(
+        initialValue = null,
+        key1 = imagePath
+    ) {
+        value = imagePath?.takeIf { it.isNotBlank() }?.let {
+            SupabaseCoffeeImageLoader.load(it)
+        }
+    }
+
+    if (bitmap == null) {
+        CoffeePackagePlaceholder(label = label, modifier = modifier)
+    } else {
+        Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = label,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .clip(RoundedCornerShape(18.dp))
+                .border(1.dp, CoffeeGold.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+        )
+    }
+}
+
+@Composable
 fun CoffeeRankingItem(
     position: Int,
     coffee: CoffeeUiModel,
@@ -555,7 +622,8 @@ fun CoffeeRankingItem(
             verticalAlignment = Alignment.Top
         ) {
             Box(modifier = Modifier.size(width = 64.dp, height = 84.dp)) {
-                CoffeePackagePlaceholder(
+                CoffeePackageImage(
+                    imagePath = coffee.imagePath,
                     label = coffee.name,
                     modifier = Modifier.fillMaxWidth().height(84.dp)
                 )

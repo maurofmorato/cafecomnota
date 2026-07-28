@@ -43,7 +43,7 @@ import com.maurofmorato.cafecomnota.data.admin.ModerationCoffee
 import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
-import com.maurofmorato.cafecomnota.ui.components.CoffeePackagePlaceholder
+import com.maurofmorato.cafecomnota.ui.components.CoffeePackageImage
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -271,7 +271,8 @@ private fun ModerationCoffeeListItem(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CoffeePackagePlaceholder(
+                CoffeePackageImage(
+                    imagePath = coffee.imagePath,
                     label = packageLabel,
                     modifier = Modifier.size(width = 72.dp, height = 96.dp)
                 )

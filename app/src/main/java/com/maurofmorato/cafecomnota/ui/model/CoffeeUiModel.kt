@@ -33,7 +33,9 @@ data class CoffeeUiModel(
     val aromaFlavor: String? = null,
     val acidityDescription: String? = null,
     val certification: String? = null,
-    val dataSourceLabel: String? = null
+    val dataSourceLabel: String? = null,
+    /** Caminho privado no Storage para a foto preferencial da embalagem. */
+    val imagePath: String? = null
 ) {
     val hasRating: Boolean
         get() = rating > 0.0 && totalReviews > 0

@@ -1,3 +1,14 @@
 # Configuração local de assinatura. Nunca enviar ao GitHub.
 keystore.properties
 *.jks
+
+
+# Arquivos locais, caches e entregas temporárias.
+.gradle/
+.idea/caches/
+build/
+local.properties
+cafecomnota_1_0_*.zip
+entrega_*/
+gerar_zip_cafecomnota_para_analise.ps1
+client_secret_*.json

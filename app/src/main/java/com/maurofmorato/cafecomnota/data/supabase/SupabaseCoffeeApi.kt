@@ -14,39 +14,93 @@ import java.nio.charset.StandardCharsets
 class SupabaseCoffeeApi {
     suspend fun loadCoffeeSummaries(): List<CoffeeUiModel> {
         return withContext(Dispatchers.IO) {
-            val query = buildQuery()
-            val url = URL("${SupabaseConfig.COFFEES_SUMMARY_ENDPOINT}?$query")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 12_000
-                readTimeout = 12_000
-
-                setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
-                setRequestProperty("Authorization", "Bearer ${SupabaseConfig.PUBLISHABLE_KEY}")
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("Content-Type", "application/json")
-            }
-
-            try {
-                val statusCode = connection.responseCode
-                val body = if (statusCode in 200..299) {
-                    connection.inputStream.bufferedReader().use { it.readText() }
-                } else {
-                    connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val coffees = parseCoffeeSummaries(
+                executeGet("${SupabaseConfig.COFFEES_SUMMARY_ENDPOINT}?${buildQuery()}")
+            )
+            val imagePaths = runCatching { loadCoffeeImagePaths() }
+                .onFailure { error ->
+                    Log.w("SupabaseCoffeeApi", "Fotos do catálogo indisponíveis", error)
                 }
+                .getOrDefault(emptyMap())
 
-                if (statusCode !in 200..299) {
-                    throw IllegalStateException(
-                        "Supabase retornou HTTP $statusCode: ${body.take(300)}"
-                    )
-                }
-
-                parseCoffeeSummaries(body)
-            } finally {
-                connection.disconnect()
+            coffees.map { coffee ->
+                coffee.copy(imagePath = imagePaths[coffee.id])
             }
         }
     }
+
+    /**
+     * A ordem respeita a regra visual do app: frente, outra imagem cadastrada
+     * e, quando não houver foto acessível, o pacote neutro na interface.
+     *
+     * A consulta continua sob RLS; não torna o bucket do Storage público.
+     */
+    private fun loadCoffeeImagePaths(): Map<String, String> {
+        val query = "select=${encode("cafe_id,storage_path,rotulo,ordem")}&order=${encode("cafe_id.asc,ordem.asc")}"
+        val array = JSONArray(
+            executeGet("${SupabaseConfig.BASE_URL}/rest/v1/cafe_fotos?$query")
+        )
+        val photosByCoffee = mutableMapOf<String, MutableList<CoffeePhotoReference>>()
+
+        for (index in 0 until array.length()) {
+            val item = array.optJSONObject(index) ?: continue
+            val cafeId = item.optString("cafe_id").trim()
+            val path = item.optString("storage_path").trim()
+            if (cafeId.isBlank() || path.isBlank()) continue
+
+            photosByCoffee.getOrPut(cafeId) { mutableListOf() }.add(
+                CoffeePhotoReference(
+                    storagePath = path,
+                    label = item.optString("rotulo").trim(),
+                    order = item.optInt("ordem", Int.MAX_VALUE)
+                )
+            )
+        }
+
+        return photosByCoffee.mapValues { (_, photos) ->
+            photos.sortedWith(
+                compareBy<CoffeePhotoReference> {
+                    if (it.label.equals("frente", ignoreCase = true)) 0 else 1
+                }.thenBy { it.order }
+            ).first().storagePath
+        }
+    }
+
+    private fun executeGet(endpoint: String): String {
+        val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 12_000
+            readTimeout = 12_000
+            setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
+            setRequestProperty("Authorization", "Bearer ${SupabaseConfig.PUBLISHABLE_KEY}")
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Content-Type", "application/json")
+        }
+
+        try {
+            val statusCode = connection.responseCode
+            val body = if (statusCode in 200..299) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            }
+
+            if (statusCode !in 200..299) {
+                Log.w("SupabaseCoffeeApi", "Falha HTTP $statusCode ao consultar catálogo: ${body.take(240)}")
+                throw IllegalStateException("Não foi possível atualizar o catálogo agora.")
+            }
+
+            return body
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private data class CoffeePhotoReference(
+        val storagePath: String,
+        val label: String,
+        val order: Int
+    )
 
     private fun buildQuery(): String {
         val select = encode("*")

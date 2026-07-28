@@ -91,7 +91,11 @@ data class AppStrings(
 
     val commonBack: String,
     val commonRegisterNewCoffee: String,
-    val commonSoon: String
+    val commonSoon: String,
+
+    val messageSessionExpired: String,
+    val messageConnection: String,
+    val messageActionFailed: String
 )
 
 fun stringsFor(language: AppLanguage): AppStrings {
@@ -187,7 +191,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             commonBack = "Voltar",
             commonRegisterNewCoffee = "Cadastrar café novo",
-            commonSoon = "Em breve"
+            commonSoon = "Em breve",
+
+            messageSessionExpired = "Sua sessão expirou. Entre novamente para continuar.",
+            messageConnection = "Não foi possível conectar agora. Verifique a internet e tente novamente.",
+            messageActionFailed = "Não foi possível concluir esta ação agora. Tente novamente."
         )
 
         AppLanguage.English -> AppStrings(
@@ -281,7 +289,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             commonBack = "Back",
             commonRegisterNewCoffee = "Add new coffee",
-            commonSoon = "Soon"
+            commonSoon = "Soon",
+
+            messageSessionExpired = "Your session has expired. Sign in again to continue.",
+            messageConnection = "We could not connect right now. Check your internet connection and try again.",
+            messageActionFailed = "We could not complete this action right now. Please try again."
         )
 
         AppLanguage.Spanish -> AppStrings(
@@ -375,7 +387,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             commonBack = "Volver",
             commonRegisterNewCoffee = "Registrar café nuevo",
-            commonSoon = "Pronto"
+            commonSoon = "Pronto",
+
+            messageSessionExpired = "Tu sesión expiró. Inicia sesión de nuevo para continuar.",
+            messageConnection = "No pudimos conectarnos ahora. Revisa tu conexión e inténtalo de nuevo.",
+            messageActionFailed = "No pudimos completar esta acción ahora. Inténtalo de nuevo."
         )
 
         AppLanguage.French -> AppStrings(
@@ -469,7 +485,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             commonBack = "Retour",
             commonRegisterNewCoffee = "Ajouter un nouveau café",
-            commonSoon = "Bientôt"
+            commonSoon = "Bientôt",
+
+            messageSessionExpired = "Votre session a expiré. Connectez-vous à nouveau pour continuer.",
+            messageConnection = "Connexion impossible pour le moment. Vérifiez votre connexion et réessayez.",
+            messageActionFailed = "Cette action n’a pas pu être terminée. Réessayez."
         )
 
         AppLanguage.German -> AppStrings(
@@ -563,7 +583,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             commonBack = "Zurück",
             commonRegisterNewCoffee = "Neuen Kaffee hinzufügen",
-            commonSoon = "Bald"
+            commonSoon = "Bald",
+
+            messageSessionExpired = "Deine Sitzung ist abgelaufen. Melde dich erneut an, um fortzufahren.",
+            messageConnection = "Zurzeit konnte keine Verbindung hergestellt werden. Prüfe deine Internetverbindung und versuche es erneut.",
+            messageActionFailed = "Diese Aktion konnte jetzt nicht abgeschlossen werden. Bitte versuche es erneut."
         )
 
         AppLanguage.Chinese -> AppStrings(
@@ -657,7 +681,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             commonBack = "返回",
             commonRegisterNewCoffee = "添加新咖啡",
-            commonSoon = "即将推出"
+            commonSoon = "即将推出",
+
+            messageSessionExpired = "你的会话已过期，请重新登录后继续。",
+            messageConnection = "暂时无法连接。请检查网络后重试。",
+            messageActionFailed = "暂时无法完成此操作，请重试。"
         )
 
         AppLanguage.Japanese -> AppStrings(
@@ -751,7 +779,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             commonBack = "戻る",
             commonRegisterNewCoffee = "新しいコーヒーを追加",
-            commonSoon = "近日対応"
+            commonSoon = "近日対応",
+
+            messageSessionExpired = "セッションの有効期限が切れました。続行するにはもう一度ログインしてください。",
+            messageConnection = "現在接続できません。インターネット接続を確認して再試行してください。",
+            messageActionFailed = "現在この操作を完了できません。もう一度お試しください。"
         )
     }
 }

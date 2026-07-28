@@ -10,5 +10,6 @@ data class ModerationCoffee(
     val moderationReason: String,
     val expectedPhotos: Int,
     val uploadedPhotos: Int,
-    val photosStatus: String
+    val photosStatus: String,
+    val imagePath: String? = null
 )
