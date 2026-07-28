@@ -16,12 +16,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +72,7 @@ fun CoffeeModerationScreen(
     var isLoading by remember { mutableStateOf(true) }
     var actionCoffeeId by remember { mutableStateOf<String?>(null) }
     var selectedStatus by remember { mutableStateOf(if (mineOnly) "todos" else "pendente") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     suspend fun reload() {
         val session = authSession ?: return
@@ -116,10 +120,13 @@ fun CoffeeModerationScreen(
         .groupingBy { moderationKey(it) }
         .eachCount()
     val filteredCoffees = visibleCoffees.filter { coffee ->
-        when (selectedStatus) {
+        val matchesStatus = when (selectedStatus) {
             "todos" -> coffee.status != "removido"
             else -> coffee.status == selectedStatus
         }
+        val matchesSearch = searchQuery.isBlank() ||
+            normalizeModerationText("${coffee.name} ${coffee.brand}").contains(normalizeModerationText(searchQuery))
+        matchesStatus && matchesSearch
     }
 
     CafeResponsiveContent(innerPadding) {
@@ -135,6 +142,19 @@ fun CoffeeModerationScreen(
         )
 
         Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null, tint = CoffeeMuted)
+            },
+            label = { Text("Pesquisar por nome ou marca") },
+            placeholder = { Text("Ex.: Pilão, Orfeu ou torrefação") }
+        )
+
+        Spacer(Modifier.height(10.dp))
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -172,7 +192,11 @@ fun CoffeeModerationScreen(
         Spacer(Modifier.height(10.dp))
         if (!isLoading && filteredCoffees.isEmpty()) {
             Text(
-                text = if (mineOnly) "Você ainda não tem contribuições neste filtro." else "Nenhum café nesta etapa da fila.",
+                text = when {
+                    searchQuery.isNotBlank() -> "Nenhum café encontrado para esta pesquisa."
+                    mineOnly -> "Você ainda não tem contribuições neste filtro."
+                    else -> "Nenhum café nesta etapa da fila."
+                },
                 color = CoffeeMuted
             )
         }
@@ -319,4 +343,8 @@ private fun moderationKey(coffee: ModerationCoffee): String = Normalizer
     .lowercase()
     .replace("[^a-z0-9]+".toRegex(), "")
 
+private fun normalizeModerationText(value: String): String = Normalizer
+    .normalize(value, Normalizer.Form.NFD)
+    .replace("\\p{M}+".toRegex(), "")
+    .lowercase()
 private fun Int?.orZero(): Int = this ?: 0

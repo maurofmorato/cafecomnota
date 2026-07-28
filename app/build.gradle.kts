@@ -26,8 +26,8 @@ android {
         applicationId = "com.maurofmorato.cafecomnota"
         minSdk = 26
         targetSdk = 36
-        versionCode = 24
-        versionName = "1.0.29"
+        versionCode = 25
+        versionName = "1.0.30"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
