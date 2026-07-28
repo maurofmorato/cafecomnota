@@ -12,8 +12,11 @@ data class AppStrings(
 
     val searchHomePlaceholder: String,
     val searchScreenTitle: String,
+    val searchScreenSubtitle: String,
     val searchScreenPlaceholder: String,
     val searchNoCoffeeFound: String,
+    val coffeeAwaitingReviews: String,
+    val coffeePriceNotInformed: String,
 
     val actionRankingTitle: String,
     val actionRankingSubtitle: String,
@@ -105,8 +108,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             searchHomePlaceholder = "Pesquisar café, marca ou torrefação",
             searchScreenTitle = "Buscar café",
+            searchScreenSubtitle = "Encontre cafés por nome, marca, tipo ou torrefação.",
             searchScreenPlaceholder = "Digite café, marca ou torrefação",
             searchNoCoffeeFound = "Nenhum café encontrado.",
+            coffeeAwaitingReviews = "Aguardando avaliações",
+            coffeePriceNotInformed = "Preço não informado",
 
             actionRankingTitle = "Ver ranking dos melhores",
             actionRankingSubtitle = "Notas, preço por kg e custo-benefício",
@@ -196,8 +202,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             searchHomePlaceholder = "Search coffee, brand or roaster",
             searchScreenTitle = "Search coffee",
+            searchScreenSubtitle = "Find coffees by name, brand, type or roaster.",
             searchScreenPlaceholder = "Type coffee, brand or roaster",
             searchNoCoffeeFound = "No coffee found.",
+            coffeeAwaitingReviews = "Awaiting ratings",
+            coffeePriceNotInformed = "Price not provided",
 
             actionRankingTitle = "See best coffee ranking",
             actionRankingSubtitle = "Ratings, price per kg and value",
@@ -287,8 +296,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             searchHomePlaceholder = "Buscar café, marca o tostador",
             searchScreenTitle = "Buscar café",
+            searchScreenSubtitle = "Encuentra cafés por nombre, marca, tipo o tostador.",
             searchScreenPlaceholder = "Escribe café, marca o tostador",
             searchNoCoffeeFound = "No se encontró ningún café.",
+            coffeeAwaitingReviews = "Esperando valoraciones",
+            coffeePriceNotInformed = "Precio no informado",
 
             actionRankingTitle = "Ver ranking de los mejores",
             actionRankingSubtitle = "Notas, precio por kg y valor",
@@ -378,8 +390,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             searchHomePlaceholder = "Rechercher café, marque ou torréfacteur",
             searchScreenTitle = "Rechercher un café",
+            searchScreenSubtitle = "Trouvez des cafés par nom, marque, type ou torréfacteur.",
             searchScreenPlaceholder = "Tapez café, marque ou torréfacteur",
             searchNoCoffeeFound = "Aucun café trouvé.",
+            coffeeAwaitingReviews = "En attente de notes",
+            coffeePriceNotInformed = "Prix non renseigné",
 
             actionRankingTitle = "Voir le classement des meilleurs",
             actionRankingSubtitle = "Notes, prix au kg et valeur",
@@ -469,8 +484,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             searchHomePlaceholder = "Kaffee, Marke oder Rösterei suchen",
             searchScreenTitle = "Kaffee suchen",
+            searchScreenSubtitle = "Finde Kaffee nach Name, Marke, Art oder Rösterei.",
             searchScreenPlaceholder = "Kaffee, Marke oder Rösterei eingeben",
             searchNoCoffeeFound = "Kein Kaffee gefunden.",
+            coffeeAwaitingReviews = "Warten auf Bewertungen",
+            coffeePriceNotInformed = "Preis nicht angegeben",
 
             actionRankingTitle = "Beste Kaffees anzeigen",
             actionRankingSubtitle = "Bewertungen, kg-Preis und Preis-Leistung",
@@ -560,8 +578,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             searchHomePlaceholder = "搜索咖啡、品牌或烘焙商",
             searchScreenTitle = "搜索咖啡",
+            searchScreenSubtitle = "按名称、品牌、类型或烘焙商查找咖啡。",
             searchScreenPlaceholder = "输入咖啡、品牌或烘焙商",
             searchNoCoffeeFound = "未找到咖啡。",
+            coffeeAwaitingReviews = "等待评分",
+            coffeePriceNotInformed = "未提供价格",
 
             actionRankingTitle = "查看最佳排行",
             actionRankingSubtitle = "评分、每公斤价格和性价比",
@@ -651,8 +672,11 @@ fun stringsFor(language: AppLanguage): AppStrings {
 
             searchHomePlaceholder = "コーヒー、ブランド、焙煎所を検索",
             searchScreenTitle = "コーヒー検索",
+            searchScreenSubtitle = "名前、ブランド、種類、焙煎所からコーヒーを探せます。",
             searchScreenPlaceholder = "コーヒー、ブランド、焙煎所を入力",
             searchNoCoffeeFound = "コーヒーが見つかりません。",
+            coffeeAwaitingReviews = "評価待ち",
+            coffeePriceNotInformed = "価格未登録",
 
             actionRankingTitle = "ベストランキングを見る",
             actionRankingSubtitle = "評価、1kg価格、コスパ",

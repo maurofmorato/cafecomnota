@@ -42,6 +42,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.R
 import com.maurofmorato.cafecomnota.ui.model.CoffeeUiModel
@@ -73,6 +76,25 @@ enum class ActionIcon {
 enum class ShortcutType {
     Value,
     Star
+}
+
+/**
+ * Mantém a hierarquia visual em celulares estreitos e limita o crescimento
+ * excessivo causado por escalas de fonte muito altas, sem impedir o usuário
+ * de aumentar o texto até um patamar acessível.
+ */
+@Composable
+fun responsiveTextSize(
+    baseSp: Float,
+    minimumSp: Float = baseSp * 0.78f
+): TextUnit {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.toFloat()
+    val fontScale = LocalDensity.current.fontScale
+    val widthFactor = (screenWidth / 412f).coerceIn(0.82f, 1f)
+    val scaleCompensation = if (fontScale > 1.15f) 1.15f / fontScale else 1f
+    return (baseSp * minOf(widthFactor, scaleCompensation))
+        .coerceAtLeast(minimumSp)
+        .sp
 }
 
 @Composable
@@ -192,7 +214,7 @@ fun CafeHeader(
             Text(
                 text = strings.appName,
                 color = CoffeeBrownDark,
-                fontSize = if (compact) 23.sp else 29.sp,
+                fontSize = responsiveTextSize(if (compact) 23f else 29f),
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Serif,
                 maxLines = 1,
@@ -213,7 +235,7 @@ fun CafeHeader(
             Text(
                 text = strings.tagline,
                 color = CoffeeText.copy(alpha = 0.82f),
-                fontSize = 14.sp,
+                fontSize = responsiveTextSize(14f, 12f),
                 textAlign = TextAlign.Center,
                 lineHeight = 18.sp
             )
@@ -256,7 +278,7 @@ fun SubScreenHero(
                     text = strings.appName,
                     modifier = Modifier.weight(1f),
                     color = CoffeeBrownDark,
-                    fontSize = 18.sp,
+                    fontSize = responsiveTextSize(18f, 15f),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -284,11 +306,14 @@ fun SubScreenHero(
 
                 Text(
                     text = title,
+                    modifier = Modifier.weight(1f),
                     color = CoffeeBrownDark,
                     fontFamily = FontFamily.Serif,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 25.sp,
-                    lineHeight = 29.sp
+                    fontSize = responsiveTextSize(25f, 19f),
+                    lineHeight = responsiveTextSize(29f, 23f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -304,8 +329,8 @@ fun SubScreenHero(
                 Text(
                     text = subtitle,
                     color = CoffeeMuted,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
+                    fontSize = responsiveTextSize(13f, 11f),
+                    lineHeight = responsiveTextSize(18f, 15f)
                 )
             }
         }
@@ -445,11 +470,12 @@ fun SectionTitle(title: String) {
             modifier = Modifier.weight(1f, fill = false),
             text = title,
             color = CoffeeBrownDark,
-            fontSize = 20.sp,
-            lineHeight = 23.sp,
+            fontSize = responsiveTextSize(20f, 16f),
+            lineHeight = responsiveTextSize(23f, 19f),
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Serif,
-            maxLines = 2,
+            maxLines = 1,
+            softWrap = false,
             overflow = TextOverflow.Ellipsis
         )
 
@@ -462,7 +488,7 @@ fun SectionTitle(title: String) {
     }
 }
 
-/** Capa neutra para cafés sem foto de produto, pronta para todos os idiomas. */
+/** Pacote neutro e sem palavras para cafés sem foto de produto. */
 @Composable
 fun CoffeePackagePlaceholder(
     label: String,
@@ -471,37 +497,25 @@ fun CoffeePackagePlaceholder(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(CoffeeBrownDark)
+            .background(CoffeeCard)
             .border(1.dp, CoffeeGold.copy(alpha = 0.75f), RoundedCornerShape(18.dp)),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(3.dp)
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 10.dp, vertical = 8.dp)
+                .fillMaxWidth()
+                .height(70.dp)
+                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 15.dp, bottomEnd = 15.dp))
+                .background(CoffeeBrownDark)
+                .border(1.dp, CoffeeGold.copy(alpha = 0.7f), RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 15.dp, bottomEnd = 15.dp)),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.LocalCafe,
-                contentDescription = null,
+                contentDescription = label,
                 tint = CoffeeGold,
-                modifier = Modifier.size(22.dp)
-            )
-            HorizontalDivider(color = CoffeeGold.copy(alpha = 0.65f))
-            Text(
-                text = label,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = label.uppercase(),
-                color = CoffeeGold,
-                fontSize = 8.sp,
-                letterSpacing = 1.sp,
-                maxLines = 1
+                modifier = Modifier.size(28.dp)
             )
         }
     }
@@ -512,6 +526,8 @@ fun CoffeeRankingItem(
     position: Int,
     coffee: CoffeeUiModel,
     reviewLabel: String,
+    awaitingReviewsLabel: String = "Aguardando avaliações",
+    priceNotInformedLabel: String = "Preço não informado",
     onClick: (() -> Unit)? = null
 ) {
     Card(
@@ -538,24 +554,27 @@ fun CoffeeRankingItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(CoffeeBrown)
-                    .border(
-                        width = 1.dp,
-                        color = CoffeeGold,
-                        shape = RoundedCornerShape(13.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "$position",
-                    color = CoffeeGold,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+            Box(modifier = Modifier.size(width = 64.dp, height = 84.dp)) {
+                CoffeePackagePlaceholder(
+                    label = coffee.name,
+                    modifier = Modifier.fillMaxWidth().height(84.dp)
                 )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .size(27.dp)
+                        .clip(CircleShape)
+                        .background(CoffeeGold)
+                        .border(1.dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$position",
+                        color = CoffeeBrownDark,
+                        fontSize = responsiveTextSize(12f, 10f),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -566,8 +585,8 @@ fun CoffeeRankingItem(
                 Text(
                     text = coffee.name,
                     color = CoffeeBrownDark,
-                    fontSize = 17.sp,
-                    lineHeight = 20.sp,
+                    fontSize = responsiveTextSize(17f, 14f),
+                    lineHeight = responsiveTextSize(20f, 17f),
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -576,8 +595,8 @@ fun CoffeeRankingItem(
                 Text(
                     text = coffee.brand,
                     color = CoffeeMuted,
-                    fontSize = 13.sp,
-                    lineHeight = 17.sp,
+                    fontSize = responsiveTextSize(13f, 11f),
+                    lineHeight = responsiveTextSize(17f, 14f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -585,8 +604,8 @@ fun CoffeeRankingItem(
                 Text(
                     text = "${coffee.type} • ${coffee.roast}",
                     color = CoffeeMuted,
-                    fontSize = 13.sp,
-                    lineHeight = 17.sp,
+                    fontSize = responsiveTextSize(13f, 11f),
+                    lineHeight = responsiveTextSize(17f, 14f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -597,21 +616,21 @@ fun CoffeeRankingItem(
                     text = if (coffee.hasRating) {
                         "${formatRating(coffee.rating)} ★ • ${coffee.totalReviews} $reviewLabel"
                     } else {
-                        "Aguardando avaliações"
+                        awaitingReviewsLabel
                     },
                     color = CoffeeGold,
-                    fontSize = 14.sp,
-                    lineHeight = 18.sp,
+                    fontSize = responsiveTextSize(14f, 11f),
+                    lineHeight = responsiveTextSize(18f, 15f),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
-                    text = formatPriceKgSmart(coffee.priceKg),
+                    text = if (coffee.hasPrice) formatPriceKg(coffee.priceKg) else priceNotInformedLabel,
                     color = if (coffee.hasPrice) CoffeeBrownDark else CoffeeMuted,
-                    fontSize = if (coffee.hasPrice) 15.sp else 13.sp,
-                    lineHeight = 18.sp,
+                    fontSize = responsiveTextSize(if (coffee.hasPrice) 15f else 13f, 11f),
+                    lineHeight = responsiveTextSize(18f, 15f),
                     fontWeight = if (coffee.hasPrice) FontWeight.Bold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

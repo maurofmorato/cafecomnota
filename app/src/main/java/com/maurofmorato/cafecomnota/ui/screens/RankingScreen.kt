@@ -97,6 +97,8 @@ fun RankingScreen(
                     position = index + 1,
                     coffee = coffee,
                     reviewLabel = strings.detailReviews,
+                    awaitingReviewsLabel = strings.coffeeAwaitingReviews,
+                    priceNotInformedLabel = strings.coffeePriceNotInformed,
                     onClick = {
                         onOpenCoffee(coffee.id)
                     }

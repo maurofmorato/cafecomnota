@@ -98,7 +98,7 @@ fun SearchScreen(
         SubScreenHero(
             strings = strings,
             title = strings.searchScreenTitle,
-            subtitle = "Encontre cafés por nome, marca, tipo ou torrefação."
+            subtitle = strings.searchScreenSubtitle
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -171,6 +171,8 @@ fun SearchScreen(
                     position = index + 1,
                     coffee = coffee,
                     reviewLabel = strings.detailReviews,
+                    awaitingReviewsLabel = strings.coffeeAwaitingReviews,
+                    priceNotInformedLabel = strings.coffeePriceNotInformed,
                     onClick = {
                         onOpenCoffee(coffee.id)
                     }
