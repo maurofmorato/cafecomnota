@@ -144,6 +144,10 @@ fun topRatedCoffees(
                 coffee.rating
             }.thenByDescending { coffee ->
                 coffee.totalReviews
+            }.thenBy { coffee ->
+                if (coffee.priceKg > 0.0) coffee.priceKg else Double.MAX_VALUE
+            }.thenBy { coffee ->
+                coffee.name.lowercase()
             }
         )
 }

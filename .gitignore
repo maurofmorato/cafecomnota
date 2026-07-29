@@ -12,3 +12,4 @@ cafecomnota_1_0_*.zip
 entrega_*/
 gerar_zip_cafecomnota_para_analise.ps1
 client_secret_*.json
+.idea/misc.xml

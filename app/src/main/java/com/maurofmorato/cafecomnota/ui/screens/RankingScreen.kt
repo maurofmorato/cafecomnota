@@ -62,7 +62,7 @@ fun RankingScreen(
         SubScreenHero(
             strings = strings,
             title = strings.rankingTitle,
-            subtitle = "Compare notas, avaliações e custo-benefício da comunidade."
+            subtitle = strings.actionRankingSubtitle
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -86,7 +86,7 @@ fun RankingScreen(
 
         if (rankedCoffees.isEmpty()) {
             Text(
-                text = "O ranking aparecerá depois das primeiras avaliações. Os cafés do catálogo continuam disponíveis na busca.",
+                text = strings.searchNoCoffeeFound,
                 color = CoffeeMuted,
                 fontSize = 13.sp,
                 lineHeight = 17.sp

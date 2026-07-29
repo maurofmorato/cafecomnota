@@ -1,6 +1,7 @@
 package com.maurofmorato.cafecomnota.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
@@ -218,43 +221,109 @@ private fun HomeLanguageCard(
     currentLanguage: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit
 ) {
+    val menuExpanded = remember {
+        mutableStateOf(false)
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                menuExpanded.value = true
+            },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = CoffeeCard),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = CoffeeCard
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
     ) {
         androidx.compose.foundation.layout.Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+            modifier = Modifier.padding(
+                horizontal = 16.dp,
+                vertical = 14.dp
+            )
         ) {
-            Text(
-                text = strings.profileLanguage,
-                color = CoffeeBrown,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = strings.profileLanguageInfo,
-                color = CoffeeMuted,
-                fontSize = 12.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Clip
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(AppLanguage.values().toList()) { language ->
-                    FilterChip(
-                        selected = currentLanguage == language,
-                        onClick = { onLanguageChange(language) },
-                        label = { Text(language.nativeName, maxLines = 1) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Language,
+                    contentDescription = null,
+                    tint = CoffeeBrown
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = strings.profileLanguage,
+                        color = CoffeeBrown,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = currentLanguage.nativeName,
+                        color = CoffeeBrown,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 15.sp
+                    )
+
+                    Text(
+                        text = strings.profileLanguageInfo,
+                        color = CoffeeMuted,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Clip
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = CoffeeBrown
+                )
+            }
+
+            Box {
+                androidx.compose.material3.DropdownMenu(
+                    expanded = menuExpanded.value,
+                    onDismissRequest = {
+                        menuExpanded.value = false
+                    }
+                ) {
+                    AppLanguage.values().forEach { language ->
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = language.nativeName,
+                                    fontWeight = if (
+                                        language == currentLanguage
+                                    ) {
+                                        FontWeight.Bold
+                                    } else {
+                                        FontWeight.Normal
+                                    }
+                                )
+                            },
+                            onClick = {
+                                menuExpanded.value = false
+                                onLanguageChange(language)
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 @Composable
 private fun VersionShareRow(
     onShowQrCode: () -> Unit
