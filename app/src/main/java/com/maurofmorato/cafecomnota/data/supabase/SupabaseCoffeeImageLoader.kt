@@ -18,13 +18,21 @@ object SupabaseCoffeeImageLoader {
     private const val BUCKET = "cafe-rotulos"
     private val cache = LruCache<String, Bitmap>(24)
 
-    suspend fun load(storagePath: String): Bitmap? = withContext(Dispatchers.IO) {
-        cache.get(storagePath) ?: download(storagePath)?.also { bitmap ->
-            cache.put(storagePath, bitmap)
+    suspend fun load(storagePath: String, accessToken: String? = null): Bitmap? =
+        withContext(Dispatchers.IO) {
+        val cacheKey = "$storagePath:${accessToken?.hashCode() ?: 0}"
+        cache.get(cacheKey) ?: download(storagePath, accessToken)?.also { bitmap ->
+            cache.put(cacheKey, bitmap)
         }
     }
 
-    private fun download(storagePath: String): Bitmap? {
+    fun evict(storagePath: String) {
+        cache.snapshot().keys
+            .filter { it.startsWith("$storagePath:") }
+            .forEach(cache::remove)
+    }
+
+    private fun download(storagePath: String, accessToken: String?): Bitmap? {
         val encodedPath = storagePath
             .split("/")
             .joinToString("/") { segment ->
@@ -37,7 +45,10 @@ object SupabaseCoffeeImageLoader {
             connectTimeout = 12_000
             readTimeout = 12_000
             setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
-            setRequestProperty("Authorization", "Bearer ${SupabaseConfig.PUBLISHABLE_KEY}")
+            setRequestProperty(
+                "Authorization",
+                "Bearer ${accessToken ?: SupabaseConfig.PUBLISHABLE_KEY}"
+            )
         }
 
         return try {

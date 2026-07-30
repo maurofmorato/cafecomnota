@@ -563,14 +563,16 @@ fun CoffeePackagePlaceholder(
 fun CoffeePackageImage(
     imagePath: String?,
     label: String,
+    accessToken: String? = null,
     modifier: Modifier = Modifier
 ) {
     val bitmap by produceState<android.graphics.Bitmap?>(
         initialValue = null,
-        key1 = imagePath
+        key1 = imagePath,
+        key2 = accessToken
     ) {
         value = imagePath?.takeIf { it.isNotBlank() }?.let {
-            SupabaseCoffeeImageLoader.load(it)
+            SupabaseCoffeeImageLoader.load(it, accessToken)
         }
     }
 

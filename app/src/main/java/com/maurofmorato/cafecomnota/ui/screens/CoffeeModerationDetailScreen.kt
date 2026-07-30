@@ -37,7 +37,8 @@ import com.maurofmorato.cafecomnota.data.admin.ModerationCoffee
 import com.maurofmorato.cafecomnota.data.admin.SupabaseAdminRepository
 import com.maurofmorato.cafecomnota.data.auth.AuthSession
 import com.maurofmorato.cafecomnota.ui.components.CafeResponsiveContent
-import com.maurofmorato.cafecomnota.ui.components.CoffeePackagePlaceholder
+import com.maurofmorato.cafecomnota.ui.components.CoffeePackageImage
+import com.maurofmorato.cafecomnota.ui.components.CoffeePhotoManager
 import com.maurofmorato.cafecomnota.ui.components.SubScreenHero
 import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
@@ -128,8 +129,10 @@ fun CoffeeModerationDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CoffeePackagePlaceholder(
+                CoffeePackageImage(
+                    imagePath = coffee.imagePath,
                     label = strings.coffeeWord,
+                    accessToken = authSession?.accessToken,
                     modifier = Modifier.size(width = 82.dp, height = 108.dp)
                 )
                 Column(Modifier.weight(1f)) {
@@ -159,6 +162,17 @@ fun CoffeeModerationDetailScreen(
                     }
                 }
             }
+        }
+
+        authSession?.takeIf { session ->
+            isAdmin || (coffee.authorId == session.userId && coffee.status == "pendente")
+        }?.let { session ->
+            Spacer(Modifier.height(12.dp))
+            CoffeePhotoManager(
+                coffeeId = coffee.id,
+                authSession = session,
+                onChanged = { onChanged(coffee.id, coffee.status) }
+            )
         }
 
         if (isAdmin) {

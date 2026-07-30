@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import com.maurofmorato.cafecomnota.data.auth.AuthenticationExpiredException
 import com.maurofmorato.cafecomnota.data.auth.isAuthenticationExpired
 import com.maurofmorato.cafecomnota.data.supabase.SupabaseConfig
+import com.maurofmorato.cafecomnota.data.supabase.SupabaseCoffeeImageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -21,6 +22,81 @@ import java.nio.charset.StandardCharsets
  * Ao repetir o envio, fotos já registradas são preservadas e somente as faltantes seguem.
  */
 class SupabaseCoffeePhotoRepository {
+    suspend fun loadPhotos(
+        coffeeId: String,
+        accessToken: String
+    ): List<CoffeeStoredPhoto> = withContext(Dispatchers.IO) {
+        val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/cafe_fotos" +
+            "?select=id,storage_path,rotulo,ordem" +
+            "&cafe_id=eq.${encode(coffeeId)}&order=ordem.asc"
+        val array = JSONArray(executeRequest(endpoint, accessToken, "GET", null, null, null))
+        buildList {
+            for (index in 0 until array.length()) {
+                val item = array.getJSONObject(index)
+                add(
+                    CoffeeStoredPhoto(
+                        id = item.getString("id"),
+                        storagePath = item.getString("storage_path"),
+                        label = item.optString("rotulo", "outra"),
+                        order = item.optInt("ordem")
+                    )
+                )
+            }
+        }
+    }
+
+    suspend fun savePhoto(
+        context: Context,
+        coffeeId: String,
+        userId: String,
+        accessToken: String,
+        photo: CoffeePhotoUpload,
+        order: Int
+    ) = withContext(Dispatchers.IO) {
+        require(order in 0 until CoffeePhotoRules.MAX_PHOTOS)
+        val previous = loadPhotos(coffeeId, accessToken).firstOrNull { it.order == order }
+        val safeLabel = photo.label.ifBlank { "outra" }
+        val storagePath = "$userId/$coffeeId/${order}_${safeLabel}.jpg"
+        uploadObject(storagePath, accessToken, compressedJpeg(context, photo.uri))
+        upsertPhotoRecord(coffeeId, storagePath, safeLabel, order, userId, accessToken)
+        if (previous != null && previous.storagePath != storagePath) {
+            runCatching { deleteObject(previous.storagePath, accessToken) }
+            SupabaseCoffeeImageLoader.evict(previous.storagePath)
+        }
+        SupabaseCoffeeImageLoader.evict(storagePath)
+        updatePhotoCounters(coffeeId, accessToken)
+    }
+
+    suspend fun deletePhoto(
+        coffeeId: String,
+        photo: CoffeeStoredPhoto,
+        accessToken: String
+    ) = withContext(Dispatchers.IO) {
+        val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/cafe_fotos" +
+            "?id=eq.${encode(photo.id)}&cafe_id=eq.${encode(coffeeId)}"
+        executeRequest(endpoint, accessToken, "DELETE", null, null, "return=minimal")
+        runCatching { deleteObject(photo.storagePath, accessToken) }
+        SupabaseCoffeeImageLoader.evict(photo.storagePath)
+        updatePhotoCounters(coffeeId, accessToken)
+    }
+
+    suspend fun makeFrontPhoto(
+        coffeeId: String,
+        photoId: String,
+        accessToken: String
+    ) = withContext(Dispatchers.IO) {
+        loadPhotos(coffeeId, accessToken).forEach { photo ->
+            val label = if (photo.id == photoId) {
+                "frente"
+            } else if (photo.label.equals("frente", ignoreCase = true)) {
+                "outra"
+            } else {
+                photo.label
+            }
+            if (label != photo.label) updatePhotoLabel(photo.id, coffeeId, label, accessToken)
+        }
+    }
+
     suspend fun uploadPendingPhotos(
         context: Context,
         coffeeId: String,
@@ -103,6 +179,46 @@ class SupabaseCoffeePhotoRepository {
             "image/jpeg",
             null,
             upsert = true
+        )
+    }
+
+    private fun deleteObject(storagePath: String, accessToken: String) {
+        executeRequest(
+            "${SupabaseConfig.BASE_URL}/storage/v1/object/$BUCKET/$storagePath",
+            accessToken,
+            "DELETE",
+            null,
+            null,
+            null
+        )
+    }
+
+    private fun updatePhotoLabel(
+        photoId: String,
+        coffeeId: String,
+        label: String,
+        accessToken: String
+    ) {
+        val endpoint = "${SupabaseConfig.BASE_URL}/rest/v1/cafe_fotos" +
+            "?id=eq.${encode(photoId)}&cafe_id=eq.${encode(coffeeId)}"
+        val body = JSONObject().put("rotulo", label)
+        executeRequest(
+            endpoint,
+            accessToken,
+            "PATCH",
+            body.toString().toByteArray(),
+            "application/json",
+            "return=minimal"
+        )
+    }
+
+    private fun updatePhotoCounters(coffeeId: String, accessToken: String) {
+        val count = existingPhotoOrders(coffeeId, accessToken).size
+        markUploadStatus(
+            coffeeId,
+            accessToken,
+            if (count > 0) "concluida" else "pendente",
+            count
         )
     }
 

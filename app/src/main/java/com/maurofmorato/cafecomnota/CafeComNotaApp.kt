@@ -1007,6 +1007,7 @@ fun CafeComNotaApp(
                                         hiddenModerationCoffeeIds = hiddenModerationCoffeeIds + coffeeId
                                     }
                                     moderationRefreshKey += 1
+                                    reloadCoffees("photos_changed")
                                 }
                             )
                         }
