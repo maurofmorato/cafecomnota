@@ -45,10 +45,9 @@ object SupabaseCoffeeImageLoader {
             connectTimeout = 12_000
             readTimeout = 12_000
             setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
-            setRequestProperty(
-                "Authorization",
-                "Bearer ${accessToken ?: SupabaseConfig.PUBLISHABLE_KEY}"
-            )
+            accessToken?.takeIf { it.isNotBlank() }?.let { token ->
+                setRequestProperty("Authorization", "Bearer $token")
+            }
         }
 
         return try {

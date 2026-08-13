@@ -19,6 +19,7 @@ data class CoffeeUiModel(
     val bitterness: Double,
     val sweetness: Double,
     val valueRating: Double,
+    val totalValueReviews: Int = 0,
     val hasDetailedRatings: Boolean = false,
     val price250g: Double = if (priceKg > 0.0) priceKg / 4.0 else 0.0,
     val lastPriceDate: String? = null,
@@ -84,6 +85,7 @@ fun sampleCoffees(): List<CoffeeUiModel> {
             bitterness = 2.7,
             sweetness = 4.2,
             valueRating = 4.6,
+            totalValueReviews = 128,
             hasDetailedRatings = true,
             lastPriceDate = "2026-06-01",
             totalPriceRecords = 4
@@ -135,13 +137,20 @@ fun findCoffeeById(
 fun topRatedCoffees(
     coffees: List<CoffeeUiModel> = sampleCoffees()
 ): List<CoffeeUiModel> {
-    return coffees
-        .filter { coffee ->
-            coffee.hasRating
-        }
+    val ratedCoffees = coffees.filter(CoffeeUiModel::hasRating)
+    val totalReviews = ratedCoffees.sumOf { coffee -> coffee.totalReviews }
+    val catalogAverage = if (totalReviews > 0) {
+        ratedCoffees.sumOf { coffee ->
+            coffee.rating * coffee.totalReviews
+        } / totalReviews
+    } else {
+        0.0
+    }
+
+    return ratedCoffees
         .sortedWith(
             compareByDescending<CoffeeUiModel> { coffee ->
-                coffee.rating
+                bayesianRankingScore(coffee, catalogAverage)
             }.thenByDescending { coffee ->
                 coffee.totalReviews
             }.thenBy { coffee ->
@@ -152,21 +161,88 @@ fun topRatedCoffees(
         )
 }
 
+/**
+ * Reduz a vantagem estatística de médias baseadas em poucas avaliações.
+ * A nota exibida ao usuário continua sendo a média real do café.
+ */
+internal fun bayesianRankingScore(
+    coffee: CoffeeUiModel,
+    catalogAverage: Double,
+    minimumReliableReviews: Double = 5.0
+): Double {
+    val reviewCount = coffee.totalReviews.toDouble()
+    if (reviewCount <= 0.0) return 0.0
+
+    return (
+        (reviewCount / (reviewCount + minimumReliableReviews)) * coffee.rating
+    ) + (
+        (minimumReliableReviews / (reviewCount + minimumReliableReviews)) *
+            catalogAverage
+    )
+}
+
 fun bestValueCoffees(
     coffees: List<CoffeeUiModel> = sampleCoffees()
 ): List<CoffeeUiModel> {
-    return coffees
+    val valuedCoffees = coffees
         .filter { coffee ->
-            coffee.hasRating
+            coffee.valueRating > 0.0 && coffee.totalValueReviews > 0
         }
+    val totalReviews = valuedCoffees.sumOf { coffee ->
+        coffee.totalValueReviews
+    }
+    val catalogAverage = if (
+        totalReviews >= MINIMUM_VALUE_RESPONSES_FOR_CATALOG_PRIOR
+    ) {
+        valuedCoffees.sumOf { coffee ->
+            coffee.valueRating * coffee.totalValueReviews
+        } / totalReviews
+    } else {
+        NEUTRAL_VALUE_PRIOR
+    }
+
+    return valuedCoffees
         .sortedWith(
             compareByDescending<CoffeeUiModel> { coffee ->
-                coffee.valueRating
+                bayesianValueRankingScore(coffee, catalogAverage)
+            }.thenByDescending { coffee ->
+                coffee.totalValueReviews
             }.thenBy { coffee ->
                 if (coffee.priceKg > 0.0) coffee.priceKg else Double.MAX_VALUE
+            }.thenBy { coffee ->
+                coffee.name.lowercase()
             }
         )
 }
+
+/**
+ * Ajusta a média de custo-benefício pela quantidade de avaliações.
+ * A média real continua sendo exibida nos cards e detalhes.
+ */
+internal fun bayesianValueRankingScore(
+    coffee: CoffeeUiModel,
+    catalogAverage: Double,
+    minimumReliableReviews: Double = 5.0
+): Double {
+    val reviewCount = coffee.totalValueReviews.toDouble()
+    if (reviewCount <= 0.0 || coffee.valueRating <= 0.0) return 0.0
+
+    return (
+        (reviewCount / (reviewCount + minimumReliableReviews)) *
+            coffee.valueRating
+    ) + (
+        (minimumReliableReviews / (reviewCount + minimumReliableReviews)) *
+            catalogAverage
+    )
+}
+
+/**
+ * Antes de o catálogo reunir respostas suficientes, usa o ponto neutro da
+ * escala de 1 a 5. Isso evita que as primeiras opiniões definam sozinhas a
+ * referência de todo o ranking de custo-benefício.
+ */
+internal const val MINIMUM_VALUE_RESPONSES_FOR_CATALOG_PRIOR = 20
+internal const val NEUTRAL_VALUE_PRIOR = 3.0
 
 fun mostReviewedCoffees(
     coffees: List<CoffeeUiModel> = sampleCoffees()

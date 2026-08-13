@@ -1,11 +1,12 @@
-package com.maurofmorato.cafecomnota.ui.screens
+﻿package com.maurofmorato.cafecomnota.ui.screens
 
 import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,12 +30,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
+import com.maurofmorato.cafecomnota.ui.i18n.AppStrings
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrown
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeBrownDark
 import com.maurofmorato.cafecomnota.ui.theme.CoffeeCard
@@ -62,18 +65,21 @@ fun CoffeeShareDialog(
 
 @Composable
 fun AppShareDialog(
+    strings: AppStrings,
     onDismiss: () -> Unit
 ) {
-    val link = TESTING_APP_LINK
+    val link = PLAY_STORE_APP_LINK
 
     ShareQrDialog(
-        title = "Compartilhar o app",
-        subtitle = "Café com nota — versão de teste",
+        title = strings.shareAppTitle,
+        subtitle = strings.shareAppSubtitle,
         link = link,
-        qrDescription = "QR Code para participar do teste do Café com nota",
-        helpText = "A pessoa precisa usar a conta Google cadastrada na lista de testadores para instalar esta versão.",
-        shareText = "Participe do teste do Café com nota: $link",
-        chooserTitle = "Compartilhar Café com nota",
+        qrDescription = strings.shareAppTitle,
+        helpText = strings.shareAppHelp,
+        shareText = "${strings.shareMessage} $link",
+        chooserTitle = strings.shareAppTitle,
+        copyLabel = strings.shareCopy,
+        shareLabel = strings.shareAction,
         onDismiss = onDismiss
     )
 }
@@ -87,6 +93,8 @@ private fun ShareQrDialog(
     helpText: String,
     shareText: String,
     chooserTitle: String,
+    copyLabel: String = "Copiar",
+    shareLabel: String = "Compartilhar",
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -99,7 +107,9 @@ private fun ShareQrDialog(
             color = CoffeeCard
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -123,7 +133,7 @@ private fun ShareQrDialog(
                 Image(
                     bitmap = qrCode.asImageBitmap(),
                     contentDescription = qrDescription,
-                    modifier = Modifier.size(230.dp)
+                    modifier = Modifier.size(210.dp)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -136,18 +146,30 @@ private fun ShareQrDialog(
                     textAlign = TextAlign.Center
                 )
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = link,
+                    color = CoffeeBrown,
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     OutlinedButton(
                         onClick = { clipboardManager.setText(AnnotatedString(link)) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         androidx.compose.material3.Icon(Icons.Default.ContentCopy, contentDescription = null)
-                        Text(" Copiar")
+                        Text(" $copyLabel")
                     }
 
                     Button(
@@ -162,10 +184,10 @@ private fun ShareQrDialog(
                                 )
                             )
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         androidx.compose.material3.Icon(Icons.Default.Share, contentDescription = null)
-                        Text(" Compartilhar")
+                        Text(" $shareLabel")
                     }
                 }
             }
@@ -175,8 +197,8 @@ private fun ShareQrDialog(
 
 private fun coffeeShareLink(coffeeId: String): String = "cafecomnota://coffee/$coffeeId"
 
-private const val TESTING_APP_LINK =
-    "https://play.google.com/apps/test/com.maurofmorato.cafecomnota/16"
+private const val PLAY_STORE_APP_LINK =
+    "https://play.google.com/store/apps/details?id=com.maurofmorato.cafecomnota"
 
 private fun generateQrCode(content: String): Bitmap {
     val matrix = MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, 720, 720)

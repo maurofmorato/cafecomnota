@@ -36,6 +36,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -200,33 +201,73 @@ private fun BottomItem(
 @Composable
 fun CafeHeader(
     strings: AppStrings,
-    compact: Boolean = false
+    compact: Boolean = false,
+    versionLabel: String? = null,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
 ) {
     Column(
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.LocalCafe,
-                contentDescription = null,
-                tint = CoffeeBrown,
-                modifier = Modifier.size(if (compact) 26.dp else 36.dp)
-            )
+            Row(
+                modifier = if (actionLabel != null && onAction != null) {
+                    Modifier.weight(1f)
+                } else {
+                    Modifier
+                },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocalCafe,
+                    contentDescription = null,
+                    tint = CoffeeBrown,
+                    modifier = Modifier.size(if (compact) 26.dp else 36.dp)
+                )
 
-            Spacer(modifier = Modifier.width(7.dp))
+                Spacer(modifier = Modifier.width(7.dp))
 
-            Text(
-                text = strings.appName,
-                color = CoffeeBrownDark,
-                fontSize = responsiveTextSize(if (compact) 23f else 29f),
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Serif,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+                Text(
+                    text = strings.appName,
+                    color = CoffeeBrownDark,
+                    fontSize = responsiveTextSize(if (compact) 23f else 29f),
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Serif,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                if (!versionLabel.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.width(5.dp))
+
+                    Text(
+                        text = versionLabel,
+                        color = CoffeeMuted,
+                        fontSize = responsiveTextSize(10f, 9f),
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                }
+            }
+
+            if (actionLabel != null && onAction != null) {
+                TextButton(onClick = onAction) {
+                    Text(
+                        text = actionLabel,
+                        color = CoffeeBrown,
+                        fontSize = responsiveTextSize(13f, 11f),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
 
         if (!compact) {
@@ -597,6 +638,10 @@ fun CoffeeRankingItem(
     reviewLabel: String,
     awaitingReviewsLabel: String = "Aguardando avaliações",
     priceNotInformedLabel: String = "Preço não informado",
+    displayedRating: Double = coffee.rating,
+    displayedReviewCount: Int = coffee.totalReviews,
+    ratingPrefix: String? = null,
+    secondaryRatingText: String? = null,
     onClick: (() -> Unit)? = null
 ) {
     Card(
@@ -683,8 +728,20 @@ fun CoffeeRankingItem(
                 Spacer(modifier = Modifier.size(4.dp))
 
                 Text(
-                    text = if (coffee.hasRating) {
-                        "${formatRating(coffee.rating)} ★ • ${coffee.totalReviews} $reviewLabel"
+                    text = if (
+                        displayedRating > 0.0 && displayedReviewCount > 0
+                    ) {
+                        buildString {
+                            if (!ratingPrefix.isNullOrBlank()) {
+                                append(ratingPrefix)
+                                append(": ")
+                            }
+                            append(formatRating(displayedRating))
+                            append(" ★ • ")
+                            append(displayedReviewCount)
+                            append(" ")
+                            append(reviewLabel)
+                        }
                     } else {
                         awaitingReviewsLabel
                     },
@@ -695,6 +752,17 @@ fun CoffeeRankingItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (!secondaryRatingText.isNullOrBlank()) {
+                    Text(
+                        text = secondaryRatingText,
+                        color = CoffeeMuted,
+                        fontSize = responsiveTextSize(12f, 10f),
+                        lineHeight = responsiveTextSize(15f, 13f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
                 Text(
                     text = if (coffee.hasPrice) formatPriceKg(coffee.priceKg) else priceNotInformedLabel,

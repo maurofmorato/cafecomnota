@@ -72,7 +72,6 @@ class SupabaseCoffeeApi {
             connectTimeout = 12_000
             readTimeout = 12_000
             setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
-            setRequestProperty("Authorization", "Bearer ${SupabaseConfig.PUBLISHABLE_KEY}")
             setRequestProperty("Accept", "application/json")
             setRequestProperty("Content-Type", "application/json")
         }
@@ -208,6 +207,9 @@ class SupabaseCoffeeApi {
         val detailedAcidity = optDetailedRating("acidez_media")
         val detailedSweetness = optDetailedRating("docura_media")
         val detailedValueRating = optDetailedRating("custo_beneficio_media")
+        val totalValueReviews = optIntOrNull(
+            "total_avaliacoes_custo_beneficio"
+        ) ?: 0
         val hasDetailedRatings = listOf(
             detailedAroma,
             detailedFlavor,
@@ -219,14 +221,6 @@ class SupabaseCoffeeApi {
         ).any { value -> value != null }
 
         val tags = buildTags(type, roast, category, certification, normalizedRating, priceKg)
-
-        val calculatedValueRating = when {
-            normalizedRating <= 0.0 -> 0.0
-            priceKg <= 0.0 -> normalizedRating
-            priceKg <= 60.0 -> (normalizedRating + 0.5).coerceAtMost(5.0)
-            priceKg <= 90.0 -> normalizedRating
-            else -> (normalizedRating - 0.3).coerceAtLeast(0.0)
-        }
 
         return CoffeeUiModel(
             id = id,
@@ -246,7 +240,8 @@ class SupabaseCoffeeApi {
             acidity = detailedAcidity ?: 0.0,
             bitterness = detailedBitterness ?: 0.0,
             sweetness = detailedSweetness ?: 0.0,
-            valueRating = detailedValueRating ?: calculatedValueRating,
+            valueRating = detailedValueRating ?: 0.0,
+            totalValueReviews = totalValueReviews,
             hasDetailedRatings = hasDetailedRatings,
             price250g = price250g,
             lastPriceDate = lastPriceDate,

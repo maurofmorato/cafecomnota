@@ -795,6 +795,7 @@ fun CafeComNotaApp(
                         innerPadding = innerPadding,
                         strings = strings,
                         currentLanguage = currentLanguage,
+                        isAuthenticated = authSession != null,
                         coffees = coffeesForUi,
                         onNavigate = {
                             when {
